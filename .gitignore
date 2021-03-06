@@ -43,3 +43,4 @@ priv/www/dev.*
 
 .vscode
 *.code-workspace
+Debug

@@ -38,6 +38,7 @@ mkShell {
     dotnetCorePackages.sdk_5_0
    ];
   shellHook = ''
-      export DOTNET_LOCATION=${dotnetCorePackages.net_5_0}/shared/Microsoft.NETCore.App/5.0.0
+      export DOTNET_LOCATION=${dotnetCorePackages.sdk_5_0}/shared/Microsoft.NETCore.App/5.0.0
+      export DOTNET_ROOT=${dotnetCorePackages.net_5_0}
     '';
 }
