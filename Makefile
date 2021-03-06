@@ -13,7 +13,11 @@ all: nifs
 priv/:
 	mkdir -p priv/
 
-priv/%.so: c_src/%.c | priv/
-	$(CC) -shared -fPIC -lei -I$(ERLDIR)/usr/include -L$(ERLDIR)/usr/lib -o $@ $<
+
+c_src/%.o: c_src/%.cpp | priv/
+	gcc -std=c++14 -c -I$(ERLDIR)/usr/include -I$(DOTNET_LOCATION) -o $@ $<
+
+priv/%.so: c_src/%.o 
+	gcc -shared -Wl,--no-as-needed -fPIC -L $(DOTNET_LOCATION) -L$(ERLDIR)/usr/lib -lstdc++ -lnethost -lei -ldl -o $@ $<
 
 nifs: $(addprefix priv/, $(addsuffix .so, $(NIFS)))

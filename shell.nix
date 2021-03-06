@@ -6,7 +6,7 @@ let
     builtins.fetchGit {
       name = "nixpkgs-pinned";
       url = "https://github.com/NixOS/nixpkgs.git";
-      rev = "e5f945b13b3f6a39ec9fbb66c9794b277dc32aa1";
+      rev = "acc5f7b18a60bc9b1024e5e1882bf7362e6492e6";
     };
 
 
@@ -35,6 +35,9 @@ mkShell {
     erlangChannel.erlang
     erlangChannel.rebar3
     erlangChannel.erlang-ls
-    dotnetCorePackages.sdk_3_1
+    dotnetCorePackages.sdk_5_0
    ];
+  shellHook = ''
+      export DOTNET_LOCATION=${dotnetCorePackages.net_5_0}/shared/Microsoft.NETCore.App/5.0.0
+    '';
 }
