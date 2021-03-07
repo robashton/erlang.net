@@ -2,6 +2,7 @@ using System;
 using CsLib.Types;
 using System.Runtime.InteropServices;
 using System.Reflection;
+using System.Linq;
 
 namespace CsLib
 {
@@ -50,7 +51,14 @@ namespace CsLib
     }
 
    public int LoadAssembly(String assemblyName) {
-     // Assembly.LoadFile(assemblyName);
+     var assembly = Assembly.LoadFrom(assemblyName);
+     var appType = assembly.GetExportedTypes()
+                     .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null);
+
+     var ctor = appType.GetConstructor(Type.EmptyTypes);
+
+     var instance = ctor.Invoke(new object[]{});
+
      Console.WriteLine("Fuckadoodledo: " + assemblyName);
      return 0;
    }
