@@ -14,6 +14,15 @@
 #include "hostfxr.h"
 #include "guff.h"
 
+typedef int (*increment_fn)();
+typedef void (*return_gchandle_fn)(void* handle);
+
+typedef struct bridge_context_ {
+  void* gchandle;
+  increment_fn increment;
+  return_gchandle_fn return_gchandle;
+} bridge_context;
+
 typedef struct hostfxr_resource_ {
   hostfxr_initialize_for_runtime_config_fn init_fptr;
   hostfxr_get_runtime_delegate_fn get_delegate_fptr;
@@ -24,6 +33,7 @@ typedef struct hostfxr_resource_ {
 typedef struct nif_globals_ {
   ErlNifResourceType *fn;
   ErlNifResourceType *hostfxr_resource;
+  ErlNifResourceType *bridge_resource;
 } nif_globals;
 
 typedef struct dotnet_entry_point_ {
@@ -35,6 +45,16 @@ ERL_NIF_TERM param_error(ErlNifEnv* env, const char_t* param) {
   return enif_make_tuple2(env,
             enif_make_atom(env, "invalid_param"),
             enif_make_atom(env, param));
+}
+
+static void bridge_resource_destroy(ErlNifEnv *env, void *obj)
+{
+  printf("bridge_resource_destroy \r\n");
+  bridge_context *context = (bridge_context*) obj;
+  if(context->gchandle) {
+    context->return_gchandle(context->gchandle);
+    context->gchandle = NULL;
+  }
 }
 
 uint8_t get_dotnet_load_assembly(const char_t *config_path, hostfxr_resource* hostfxr)
@@ -93,6 +113,7 @@ static int load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info) {
 
   globals->fn = enif_open_resource_type(env, NULL, "DotNetFn", NULL, ERL_NIF_RT_CREATE, NULL);
   globals->hostfxr_resource = enif_open_resource_type(env, NULL, "HostFxrResource", NULL, ERL_NIF_RT_CREATE, NULL);
+  globals->bridge_resource = enif_open_resource_type(env, NULL, "BridgeResource", bridge_resource_destroy, ERL_NIF_RT_CREATE, NULL);
 
   return 0;
 }
@@ -140,16 +161,45 @@ static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
     return enif_make_atom(env, "nope");
   }
 
-  int result = fn(NULL, 0);
+  bridge_context* context = (bridge_context*)enif_alloc_resource(globals->bridge_resource, sizeof(bridge_context));
+  memset(context, 0, sizeof(bridge_context));
 
-  return enif_make_tuple2(env, enif_make_atom(env, "ok"), enif_make_int(env, result));
+
+  int result = fn(context, sizeof(bridge_context*));
+
+  context->increment();
+
+  if(result) {
+    enif_release_resource(context);
+    return enif_make_tuple2(env, enif_make_atom(env, "error"), enif_make_atom(env, "create_failed"));
+  }
+
+  ERL_NIF_TERM resource = enif_make_resource(env, context);
+  enif_release_resource(context);
+
+
+  return enif_make_tuple2(env, enif_make_atom(env, "ok"), resource);
+}
+
+static ERL_NIF_TERM increment(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+  nif_globals* globals = (nif_globals*)(enif_priv_data(env));
+  bridge_context* context;
+
+  int rc = 0;
+  if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
+
+  int result = context->increment();
+
+  return enif_make_tuple2(env, 
+      enif_make_atom(env, "ok"), enif_make_int(env, result));
 }
 
 
 static ErlNifFunc nif_funcs[] =
 {
   {"load_hostfxr_impl", 1, load_hostfxr},
-  {"create_bridge", 1, create_bridge}
+  {"create_bridge", 1, create_bridge},
+  {"increment", 1, increment}
 };
 
 ERL_NIF_INIT(dotnet,

@@ -2,6 +2,7 @@
 
 -export([ create_bridge/1
         , load_hostfxr/0
+        , increment/1
         ]).
 
 -on_load(init/0).
@@ -14,6 +15,9 @@ init() ->
   ok = erlang:load_nif(File, 0).
 
 create_bridge(HostFxr) ->
+  erlang:nif_error("Nif not loaded").
+
+increment(Bridge) ->
   erlang:nif_error("Nif not loaded").
 
 load_hostfxr_impl(_RuntimeConfig) ->

@@ -36,6 +36,7 @@ mkShell {
     erlangChannel.rebar3
     erlangChannel.erlang-ls
     dotnetCorePackages.sdk_5_0
+    gdb
    ];
   shellHook = ''
       export DOTNET_LOCATION=${dotnetCorePackages.sdk_5_0}/shared/Microsoft.NETCore.App/5.0.0
