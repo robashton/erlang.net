@@ -2,13 +2,14 @@
 
 -export([ create_bridge/1
         , load_hostfxr/0
+        , load_assembly/2
         , increment/1
         ]).
 
 -on_load(init/0).
 
 load_hostfxr() ->
-  load_hostfxr_impl(<<"priv/cslib.runtimeconfig.json">>).
+  load_hostfxr_impl(<<"priv/cslib.runtimeconfig.json", 0>>).
 
 init() ->
   File = filename:join(code:priv_dir(dotnet), dotnet),
@@ -18,6 +19,9 @@ create_bridge(HostFxr) ->
   erlang:nif_error("Nif not loaded").
 
 increment(Bridge) ->
+  erlang:nif_error("Nif not loaded").
+
+load_assembly(Bridge, AssemblyName) ->
   erlang:nif_error("Nif not loaded").
 
 load_hostfxr_impl(_RuntimeConfig) ->

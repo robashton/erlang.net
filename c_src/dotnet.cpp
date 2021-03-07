@@ -14,13 +14,15 @@
 #include "hostfxr.h"
 #include "guff.h"
 
-typedef int (*increment_fn)();
+typedef int (*increment_fn)(void* handle);
 typedef void (*return_gchandle_fn)(void* handle);
+typedef int (*load_assembly_fn)(void* handle, const char_t* assemblyName);
 
 typedef struct bridge_context_ {
   void* gchandle;
-  increment_fn increment;
   return_gchandle_fn return_gchandle;
+  increment_fn increment;
+  load_assembly_fn load_assembly;
 } bridge_context;
 
 typedef struct hostfxr_resource_ {
@@ -164,10 +166,7 @@ static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
   bridge_context* context = (bridge_context*)enif_alloc_resource(globals->bridge_resource, sizeof(bridge_context));
   memset(context, 0, sizeof(bridge_context));
 
-
   int result = fn(context, sizeof(bridge_context*));
-
-  context->increment();
 
   if(result) {
     enif_release_resource(context);
@@ -176,7 +175,6 @@ static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 
   ERL_NIF_TERM resource = enif_make_resource(env, context);
   enif_release_resource(context);
-
 
   return enif_make_tuple2(env, enif_make_atom(env, "ok"), resource);
 }
@@ -188,7 +186,24 @@ static ERL_NIF_TERM increment(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
   int rc = 0;
   if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
 
-  int result = context->increment();
+  int result = context->increment(context->gchandle);
+
+  return enif_make_tuple2(env, 
+      enif_make_atom(env, "ok"), enif_make_int(env, result));
+}
+
+static ERL_NIF_TERM load_assembly(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+  nif_globals* globals = (nif_globals*)(enif_priv_data(env));
+  bridge_context* context;
+  ErlNifBinary assemblyName;
+
+  int rc = 0;
+  if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
+  if(!enif_inspect_binary(env, argv[1], &assemblyName)) { return param_error(env, "assemblyName"); }
+
+  const char* actual_data = (context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
+
+  int result = context->load_assembly(context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
 
   return enif_make_tuple2(env, 
       enif_make_atom(env, "ok"), enif_make_int(env, result));
@@ -199,7 +214,8 @@ static ErlNifFunc nif_funcs[] =
 {
   {"load_hostfxr_impl", 1, load_hostfxr},
   {"create_bridge", 1, create_bridge},
-  {"increment", 1, increment}
+  {"increment", 1, increment},
+  {"load_assembly", 2, load_assembly}
 };
 
 ERL_NIF_INIT(dotnet,
