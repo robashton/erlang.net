@@ -11,10 +11,16 @@ namespace CsLib
   {
     public IntPtr handle;
     public IntPtr @return;
-    public IntPtr increment;
     public IntPtr load_assembly;
+    public IntPtr runtime;
   }
-  
+
+  [StructLayout(LayoutKind.Sequential)]
+  public struct AsyncRequest 
+  {
+    public int isComplete;
+    public IntPtr result;
+  }
 
   public class Bridge {
 
@@ -27,17 +33,11 @@ namespace CsLib
       args->handle = GCHandle.ToIntPtr(handle);
 
 
-      args->increment = (IntPtr)(delegate*<IntPtr, int>) &IncrementWrapper;
       args->@return = (IntPtr)(delegate* <IntPtr, int>) &Return;
       args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr>)&LoadAssemblyWrapper;
       return 0;
     }
     
-
-    static int IncrementWrapper(IntPtr ptr) {
-      return ((Bridge)(GCHandle.FromIntPtr(ptr).Target)).Increment();
-    }
-
     static IntPtr LoadAssemblyWrapper(IntPtr ptr, IntPtr assemblyName) {
       return ((Bridge)(GCHandle.FromIntPtr(ptr).Target)).LoadAssembly(Marshal.PtrToStringAuto(assemblyName));
     }
@@ -47,11 +47,6 @@ namespace CsLib
       return 0; 
     }
 
-    public int Increment() {
-      return this.value += 1;
-    }
-
-    // TODO: Rename to LoadAppFromAssembly or summat
    public IntPtr LoadAssembly(String assemblyName) {
 
      try

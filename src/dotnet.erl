@@ -3,7 +3,7 @@
 -export([ create_bridge/1
         , load_hostfxr/0
         , load_app_from_assembly/2
-        , increment/1
+        , callback/3
         ]).
 
 -on_load(init/0).
@@ -15,13 +15,13 @@ init() ->
   File = filename:join(code:priv_dir(dotnet), dotnet),
   ok = erlang:load_nif(File, 0).
 
-create_bridge(HostFxr) ->
+create_bridge(_HostFxr) ->
   erlang:nif_error("Nif not loaded").
 
-increment(Bridge) ->
+load_app_from_assembly(_Bridge, _AssemblyName) ->
   erlang:nif_error("Nif not loaded").
 
-load_app_from_assembly(Bridge, AssemblyName) ->
+callback(_Bridge, _Resource, _Result) ->
   erlang:nif_error("Nif not loaded").
 
 load_hostfxr_impl(_RuntimeConfig) ->

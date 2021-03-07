@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <iostream>
+#include <unistd.h>
 
 
 #include <nethost.h>
@@ -14,17 +15,46 @@
 #include "hostfxr.h"
 #include "guff.h"
 
-
 typedef void* GCHANDLE;
 
-typedef int (*increment_fn)(GCHANDLE handle);
+typedef struct nif_globals_ {
+  ErlNifResourceType *fn;
+  ErlNifResourceType *hostfxr_resource;
+  ErlNifResourceType *bridge_resource;
+  ErlNifResourceType *callback_resource;
+} nif_globals;
+
+typedef struct callback_resource_ {
+  uint8_t complete;
+  ERL_NIF_TERM result;
+} callback_resource;
+
+typedef struct erlang_env_ {
+  ErlNifPid owner;
+  nif_globals* globals;
+} erlang_env;
+
+typedef ERL_NIF_TERM (*spawn_fn)(erlang_env* env);
+
+typedef struct erlang_runtime_ {
+  erlang_env* env;
+  spawn_fn spawn;
+} erlang_runtime;
+
+typedef ERL_NIF_TERM (*start_fn)(erlang_runtime* runtime);
+
+typedef struct loaded_app_ {
+  GCHANDLE instance;
+  start_fn start;
+} loaded_app;
+
 typedef void (*return_gchandle_fn)(GCHANDLE handle);
 typedef GCHANDLE (*load_app_from_assembly_fn)(GCHANDLE handle, const char_t* assemblyName);
 
 typedef struct bridge_context_ {
   void* gchandle;
+  erlang_runtime* runtime;
   return_gchandle_fn return_gchandle;
-  increment_fn increment;
   load_app_from_assembly_fn load_app_from_assembly;
 } bridge_context;
 
@@ -35,11 +65,6 @@ typedef struct hostfxr_resource_ {
   load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer;
 } hostfxr_resource;
 
-typedef struct nif_globals_ {
-  ErlNifResourceType *fn;
-  ErlNifResourceType *hostfxr_resource;
-  ErlNifResourceType *bridge_resource;
-} nif_globals;
 
 typedef struct dotnet_entry_point_ {
   component_entry_point_fn fn;
@@ -54,12 +79,81 @@ ERL_NIF_TERM param_error(ErlNifEnv* env, const char_t* param) {
 
 static void bridge_resource_destroy(ErlNifEnv *env, void *obj)
 {
-  printf("bridge_resource_destroy \r\n");
   bridge_context *context = (bridge_context*) obj;
   if(context->gchandle) {
     context->return_gchandle(context->gchandle);
     context->gchandle = NULL;
   }
+
+  if(context->runtime) {
+    if(context->runtime->env) {
+      free(context->runtime->env);
+    }
+    free(context->runtime);
+    context->runtime = NULL;
+  }
+}
+
+static void callback_resource_destroy(ErlNifEnv *env, void *obj)
+{
+  callback_resource *resource = (callback_resource*) obj;
+}
+
+
+static ERL_NIF_TERM runtime_spawn(erlang_env* erlang) {
+  ErlNifEnv *env = enif_alloc_env(); 
+
+  // We'll be nice and do this as a resource so we can pass it to erlang and back to us
+  callback_resource* callback = (callback_resource*)enif_alloc_resource(erlang->globals->callback_resource, sizeof(callback_resource));
+  memset(callback, 0, sizeof(callback_resource));
+
+  // We'll not release it, cos Erlang will think it's finished with as soon as the callback is invoked
+  ERL_NIF_TERM resource = enif_make_resource(env, callback);
+
+  enif_send(NULL, &erlang->owner, env, enif_make_tuple3(env,
+        enif_make_atom(env, "call_fn"),
+        enif_make_tuple3(env, 
+          enif_make_atom(env, "erlang"),
+          enif_make_atom(env, "spawn"),
+          enif_make_list3(env, 
+            enif_make_atom(env, "dotnet_process"), 
+            enif_make_atom(env, "init"), 
+            enif_make_list(env, 0))),
+        resource)
+      );
+
+  // cheeky spin-wait on this being written in the nif:callback
+  while(!callback->complete) {
+    sleep(0);
+  }
+
+  // TODO: This probably needs copying into a new 
+  // env owned by our erlang_env
+  ERL_NIF_TERM result = callback->result;
+
+  // Now we can clear that resource up
+  enif_release_resource(callback);
+
+  // And free the env we used to send the message as that's gone now too
+  enif_free_env(env); 
+
+  // Finally, send this back to C# (lol)
+  return result;
+}
+
+static erlang_runtime* create_runtime(ErlNifEnv* env) {
+  erlang_runtime* runtime = (erlang_runtime*)calloc(1, sizeof(erlang_runtime));
+
+  // Fns we want to provide to C#
+  runtime->spawn = &runtime_spawn;
+
+  // Useful info that those fns are gonna want
+  // stashed away into a handy IntPtr
+  runtime->env = (erlang_env*)calloc(1, sizeof(erlang_env));
+  enif_self(env, &runtime->env->owner );
+  runtime->env->globals = (nif_globals*)enif_priv_data(env);
+
+  return runtime;
 }
 
 uint8_t get_dotnet_load_assembly(const char_t *config_path, hostfxr_resource* hostfxr)
@@ -119,6 +213,7 @@ static int load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info) {
   globals->fn = enif_open_resource_type(env, NULL, "DotNetFn", NULL, ERL_NIF_RT_CREATE, NULL);
   globals->hostfxr_resource = enif_open_resource_type(env, NULL, "HostFxrResource", NULL, ERL_NIF_RT_CREATE, NULL);
   globals->bridge_resource = enif_open_resource_type(env, NULL, "BridgeResource", bridge_resource_destroy, ERL_NIF_RT_CREATE, NULL);
+  globals->callback_resource = enif_open_resource_type(env, NULL, "CallbackResource", callback_resource_destroy, ERL_NIF_RT_CREATE, NULL);
 
   return 0;
 }
@@ -169,6 +264,8 @@ static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
   bridge_context* context = (bridge_context*)enif_alloc_resource(globals->bridge_resource, sizeof(bridge_context));
   memset(context, 0, sizeof(bridge_context));
 
+  context->runtime = create_runtime(env);
+
   int result = fn(context, sizeof(bridge_context*));
 
   if(result) {
@@ -180,19 +277,6 @@ static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
   enif_release_resource(context);
 
   return enif_make_tuple2(env, enif_make_atom(env, "ok"), resource);
-}
-
-static ERL_NIF_TERM increment(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
-  nif_globals* globals = (nif_globals*)(enif_priv_data(env));
-  bridge_context* context;
-
-  int rc = 0;
-  if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
-
-  int result = context->increment(context->gchandle);
-
-  return enif_make_tuple2(env, 
-      enif_make_atom(env, "ok"), enif_make_int(env, result));
 }
 
 static ERL_NIF_TERM load_app_from_assembly(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
@@ -212,13 +296,30 @@ static ERL_NIF_TERM load_app_from_assembly(ErlNifEnv* env, int argc, const ERL_N
       enif_make_atom(env, "ok"), enif_make_int(env, 0));
 }
 
+static ERL_NIF_TERM callback(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+  nif_globals* globals = (nif_globals*)(enif_priv_data(env));
+  bridge_context* context;
+  callback_resource* callback_resource;
+  ErlNifBinary assemblyName;
+
+  int rc = 0;
+  if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
+  if(!enif_get_resource(env, argv[1], globals->callback_resource, (void**)&callback_resource)) { return param_error(env, "assemblyName"); }
+
+  callback_resource->result = argv[2];
+  callback_resource->complete = 1;
+
+  return enif_make_atom(env, "ok");
+}
+
 
 static ErlNifFunc nif_funcs[] =
 {
   {"load_hostfxr_impl", 1, load_hostfxr},
   {"create_bridge", 1, create_bridge},
-  {"increment", 1, increment},
-  {"load_app_from_assembly", 2, load_app_from_assembly}
+  {"load_app_from_assembly", 2, load_app_from_assembly},
+  {"callback", 3, callback}
+
 };
 
 ERL_NIF_INIT(dotnet,
