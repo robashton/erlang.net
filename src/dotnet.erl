@@ -2,7 +2,7 @@
 
 -export([ create_bridge/1
         , load_hostfxr/0
-        , load_app_from_assembly/2
+        , run_app_from_assembly/2
         , callback/3
         ]).
 
@@ -18,7 +18,7 @@ init() ->
 create_bridge(_HostFxr) ->
   erlang:nif_error("Nif not loaded").
 
-load_app_from_assembly(_Bridge, _AssemblyName) ->
+run_app_from_assembly(_Bridge, _AssemblyName) ->
   erlang:nif_error("Nif not loaded").
 
 callback(_Bridge, _Resource, _Result) ->

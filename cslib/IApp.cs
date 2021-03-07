@@ -5,6 +5,6 @@ namespace CsLib
 {
     public interface IApp
     {
-      Pid start(Runtime runtime);
+      ITerm Start(Runtime runtime);
     }
 }

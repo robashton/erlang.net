@@ -1,13 +1,13 @@
 ﻿using System;
 using CsLib;
-using CsLib.Types;
+using CsLib.Erlang;
 
 namespace TestImpl
 {
     public class MyApp : IApp
     {
-      public ErlangPid start(ErlangRuntime runtime) {
-        return runtime.spawn();
+      public ITerm Start(Runtime runtime) {
+        return runtime.Spawn();
       }
     }
 }

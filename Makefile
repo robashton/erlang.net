@@ -10,7 +10,7 @@ endif
 
 CONFIGURATION=Debug
 
-all: nifs priv/cslib.dll priv/cslib.runtimeconfig.json
+all: nifs priv/testimpl.dll priv/cslib.dll priv/cslib.runtimeconfig.json
 
 priv/:
 	mkdir -p priv/
@@ -25,6 +25,9 @@ priv/%.so: c_src/%.o
 priv/cslib.dll: cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll
 	cp $< $@
 
+priv/testimpl.dll: testimpl/bin/$(CONFIGURATION)/net5.0/testimpl.dll
+	cp $< $@
+
 priv/cslib.runtimeconfig.json: cslib/bin/$(CONFIGURATION)/net5.0/cslib.runtimeconfig.json
 	cp $< $@
 
@@ -32,6 +35,9 @@ cslib/bin/$(CONFIGURATION)/net5.0/cslib.runtimeconfig.json: cslib/bin/$(CONFIGUR
 
 cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll: cslib/*.cs cslib/cslib.csproj
 	cd cslib && dotnet build
+
+testimpl/bin/$(CONFIGURATION)/net5.0/testimpl.dll: testimpl/*.cs testimpl/testimpl.csproj
+	cd testimpl && dotnet build
 
 nifs: $(addprefix priv/, $(addsuffix .so, $(NIFS)))
 

@@ -4,41 +4,42 @@ using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Linq;
 
+
 namespace CsLib
 {
   [StructLayout(LayoutKind.Sequential)]
   public struct CreateArgs
   {
     public IntPtr handle;
+    public IntPtr runtime;
     public IntPtr @return;
     public IntPtr load_assembly;
-    public IntPtr runtime;
-  }
-
-  [StructLayout(LayoutKind.Sequential)]
-  public struct AsyncRequest 
-  {
-    public int isComplete;
-    public IntPtr result;
   }
 
   public class Bridge {
 
-    int value = 0;
+    Runtime runtime;
+    IApp running_app;
+
+    private Bridge(Runtime runtime) {
+      this.runtime = runtime;
+    }
     
     unsafe public static int Create(IntPtr ptr, int argLength) {
       CreateArgs* args = (CreateArgs*)ptr;
-      Bridge instance = new Bridge();
+
+      Runtime runtime = new Runtime(args->runtime);
+      Bridge instance = new Bridge(runtime);
+
       var handle = GCHandle.Alloc(instance);
       args->handle = GCHandle.ToIntPtr(handle);
-
-
       args->@return = (IntPtr)(delegate* <IntPtr, int>) &Return;
-      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr>)&LoadAssemblyWrapper;
+      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, int>)&LoadAssemblyWrapper;
+
       return 0;
     }
     
-    static IntPtr LoadAssemblyWrapper(IntPtr ptr, IntPtr assemblyName) {
+    static int LoadAssemblyWrapper(IntPtr ptr, IntPtr assemblyName) {
       return ((Bridge)(GCHandle.FromIntPtr(ptr).Target)).LoadAssembly(Marshal.PtrToStringAuto(assemblyName));
     }
 
@@ -47,26 +48,30 @@ namespace CsLib
       return 0; 
     }
 
-   public IntPtr LoadAssembly(String assemblyName) {
+   public int LoadAssembly(String filepath) {
 
      try
      {
-       var assembly = Assembly.LoadFrom(assemblyName);
+       // TODO: Ask stears what he remembers about app domains and this shit..
+       AssemblyName assemblyName = AssemblyName.GetAssemblyName(filepath);
+       Assembly assembly = Assembly.Load(assemblyName);
+
        var appType = assembly.GetExportedTypes()
                        .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null);
 
        var ctor = appType.GetConstructor(Type.EmptyTypes);
 
-       var instance = ctor.Invoke(new object[]{});
+       this.running_app = (IApp)ctor.Invoke(new object[]{});
 
-       var handle = GCHandle.Alloc(instance);
-       return GCHandle.ToIntPtr(handle);
+       var term = this.running_app.Start(this.runtime);
+
+       return term.Handle();
      }
      // I think I just need to do this or we're going to end up with exceptions bubbling up into C
      // and we'll end up leaking shit all over the place
      catch (Exception ex) {
        Console.WriteLine("Exception in bridge: " + ex.ToString());
-       return IntPtr.Zero;
+       return 0;
      }
    }
   }

@@ -1,10 +1,21 @@
+-module(dotnethost_control).
+
 -behaviour(gen_server).
 
+
+-define(SERVER, ?MODULE).
+
 -export([
-         start_link/0
+         start_link/1
         ]).
 
--export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
+-export([ init/1
+        , handle_call/3
+        , handle_cast/2
+        , handle_info/2
+        , handle_continue/2
+        , terminate/2
+        , code_change/3]).
 
 
 -record(state, { host_fxr :: term()
@@ -13,15 +24,27 @@
                }).
 
 start_link(HostFxr) ->
-  gen_server:start_link({local, ?SERVER}, ?MODULE, [], [HostFxr]).
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [HostFxr], []).
 
 init([HostFxr]) ->
   {ok, Bridge} = dotnet:create_bridge(HostFxr),
-  { ok, App } = dotnet:load_app_from_assembly(<<"priv/testimpl.dll", 0>>),
+
+  io:format(user, "Bridge created ~n", []),
   {ok, #state{ host_fxr = HostFxr
-             , bridge = Bridge
-             , app = App
-             }}.
+               , bridge = Bridge
+               , app = undefind
+             }, {continue, load}}.
+
+handle_continue(load, State = #state { bridge = Bridge }) ->
+  Self = self(),
+  io:format(user, "Starting the .NET app ~n", []),
+  %% This will either need monitoring/linking/etc, or spinning up in a separate sup
+  %% if it dies, we need to die
+  spawn_link(fun() ->
+                 {ok, Pid} = dotnet:run_app_from_assembly(Bridge, <<"priv/testimpl.dll", 0>>),
+                 Self ! { started, Pid }
+             end),
+  {noreply, State}.
 
 handle_call(not_implemented, _From, State = #state{}) ->
   {reply, ok, State}.
@@ -29,9 +52,17 @@ handle_call(not_implemented, _From, State = #state{}) ->
 handle_cast(not_implemented, State) ->
   {noreply, State}.
 
-handle_info({call_fn, { M, F, A }, Resource}, State = #state{ app = App }) ->
+handle_info({call_fn, Args ={ M, F, A }, Resource}, State = #state{ bridge = Bridge }) ->
   Result = erlang:apply(M, F, A),
   ok = dotnet:callback(Bridge, Resource, Result),
+  {noreply, State};
+
+handle_info({started, Pid}, State) ->
+  io:format(user, ".NET app was started ~n", []),
+  {noreply, State#state { app = Pid } };
+
+handle_info(Other, State = #state{ bridge = Bridge }) ->
+  io:format(user, "Got a weird message from somewhere ~p~n", [Other]),
   {noreply, State}.
 
 terminate(_Reason, _State) ->

@@ -41,21 +41,14 @@ typedef struct erlang_runtime_ {
   spawn_fn spawn;
 } erlang_runtime;
 
-typedef ERL_NIF_TERM (*start_fn)(erlang_runtime* runtime);
-
-typedef struct loaded_app_ {
-  GCHANDLE instance;
-  start_fn start;
-} loaded_app;
-
 typedef void (*return_gchandle_fn)(GCHANDLE handle);
-typedef GCHANDLE (*load_app_from_assembly_fn)(GCHANDLE handle, const char_t* assemblyName);
+typedef ERL_NIF_TERM (*run_app_from_assembly_fn)(GCHANDLE handle, const char_t* assemblyName);
 
 typedef struct bridge_context_ {
   void* gchandle;
   erlang_runtime* runtime;
   return_gchandle_fn return_gchandle;
-  load_app_from_assembly_fn load_app_from_assembly;
+  run_app_from_assembly_fn run_app_from_assembly;
 } bridge_context;
 
 typedef struct hostfxr_resource_ {
@@ -116,7 +109,7 @@ static ERL_NIF_TERM runtime_spawn(erlang_env* erlang) {
           enif_make_atom(env, "erlang"),
           enif_make_atom(env, "spawn"),
           enif_make_list3(env, 
-            enif_make_atom(env, "dotnet_process"), 
+            enif_make_atom(env, "dotnetprocess"), 
             enif_make_atom(env, "init"), 
             enif_make_list(env, 0))),
         resource)
@@ -151,6 +144,7 @@ static erlang_runtime* create_runtime(ErlNifEnv* env) {
   // stashed away into a handy IntPtr
   runtime->env = (erlang_env*)calloc(1, sizeof(erlang_env));
   enif_self(env, &runtime->env->owner );
+
   runtime->env->globals = (nif_globals*)enif_priv_data(env);
 
   return runtime;
@@ -166,7 +160,7 @@ uint8_t get_dotnet_load_assembly(const char_t *config_path, hostfxr_resource* ho
 
     if (rc != 0 || cxt == NULL)
     {
-        printf("Init failed: %d \r\n", rc);
+        printf("Init failed: %d \n", rc);
         hostfxr->close_fptr(cxt);
         return 0;
     }
@@ -191,7 +185,7 @@ uint8_t load_hostfxr(hostfxr_resource* hostfxr)
   int rc = get_hostfxr_path(buffer, &buffer_size, NULL);
 
   if (rc != 0) {
-    printf("Failed to find hostfxr path \r\n");
+    printf("Failed to find hostfxr path \n");
     return 0;
   }
 
@@ -230,13 +224,13 @@ static ERL_NIF_TERM load_hostfxr(ErlNifEnv* env, int argc, const ERL_NIF_TERM ar
 
   if(!load_hostfxr(hostfxr)) {
     enif_release_resource(hostfxr);
-    printf("Completely failed to load hostfxr \r\n");
+    printf("Completely failed to load hostfxr \n");
     return -1;
   } 
 
   if(!get_dotnet_load_assembly(reinterpret_cast<const char_t*>(runtimeconfig.data), hostfxr)) {
     enif_release_resource(hostfxr);
-    printf("Failed to get LoadAssembly \r\n");
+    printf("Failed to get LoadAssembly \n");
     return -1;
   }
 
@@ -257,7 +251,7 @@ static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
   component_entry_point_fn fn;
 
   if(rc = hostfxr->load_assembly_and_get_function_pointer("priv/cslib.dll", "CsLib.Bridge, CsLib", "Create", NULL, NULL, (void**)&fn)) {
-    printf("Sad trombone %d \r\n", rc);
+    printf("Sad trombone %d \n", rc);
     return enif_make_atom(env, "nope");
   }
 
@@ -279,7 +273,7 @@ static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
   return enif_make_tuple2(env, enif_make_atom(env, "ok"), resource);
 }
 
-static ERL_NIF_TERM load_app_from_assembly(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+static ERL_NIF_TERM run_app_from_assembly(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   nif_globals* globals = (nif_globals*)(enif_priv_data(env));
   bridge_context* context;
   ErlNifBinary assemblyName;
@@ -290,10 +284,16 @@ static ERL_NIF_TERM load_app_from_assembly(ErlNifEnv* env, int argc, const ERL_N
 
   const char* actual_data = (context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
 
-  GCHANDLE app = context->load_app_from_assembly(context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
+  ERL_NIF_TERM result = context->run_app_from_assembly(context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
 
-  return enif_make_tuple2(env, 
-      enif_make_atom(env, "ok"), enif_make_int(env, 0));
+  if(result) {
+    // TODO: I think I should be copying from our .NET env to this env.. (if I had one)
+    return enif_make_tuple2(env, 
+        enif_make_atom(env, "ok"), result);
+  } else {
+    return enif_make_atom(env, "nope");
+  }
+
 }
 
 static ERL_NIF_TERM callback(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
@@ -317,7 +317,7 @@ static ErlNifFunc nif_funcs[] =
 {
   {"load_hostfxr_impl", 1, load_hostfxr},
   {"create_bridge", 1, create_bridge},
-  {"load_app_from_assembly", 2, load_app_from_assembly},
+  {"run_app_from_assembly", 2, run_app_from_assembly, ERL_NIF_DIRTY_JOB_CPU_BOUND},
   {"callback", 3, callback}
 
 };
@@ -334,6 +334,6 @@ ERL_NIF_INIT(dotnet,
 
 
 int main() {
-  printf("hi \r\n");
+  printf("hi \n");
   return 0;
 }
