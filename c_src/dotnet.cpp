@@ -14,15 +14,18 @@
 #include "hostfxr.h"
 #include "guff.h"
 
-typedef int (*increment_fn)(void* handle);
-typedef void (*return_gchandle_fn)(void* handle);
-typedef int (*load_assembly_fn)(void* handle, const char_t* assemblyName);
+
+typedef void* GCHANDLE;
+
+typedef int (*increment_fn)(GCHANDLE handle);
+typedef void (*return_gchandle_fn)(GCHANDLE handle);
+typedef GCHANDLE (*load_app_from_assembly_fn)(GCHANDLE handle, const char_t* assemblyName);
 
 typedef struct bridge_context_ {
   void* gchandle;
   return_gchandle_fn return_gchandle;
   increment_fn increment;
-  load_assembly_fn load_assembly;
+  load_app_from_assembly_fn load_app_from_assembly;
 } bridge_context;
 
 typedef struct hostfxr_resource_ {
@@ -192,7 +195,7 @@ static ERL_NIF_TERM increment(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[
       enif_make_atom(env, "ok"), enif_make_int(env, result));
 }
 
-static ERL_NIF_TERM load_assembly(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+static ERL_NIF_TERM load_app_from_assembly(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   nif_globals* globals = (nif_globals*)(enif_priv_data(env));
   bridge_context* context;
   ErlNifBinary assemblyName;
@@ -203,10 +206,10 @@ static ERL_NIF_TERM load_assembly(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
 
   const char* actual_data = (context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
 
-  int result = context->load_assembly(context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
+  GCHANDLE app = context->load_app_from_assembly(context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
 
   return enif_make_tuple2(env, 
-      enif_make_atom(env, "ok"), enif_make_int(env, result));
+      enif_make_atom(env, "ok"), enif_make_int(env, 0));
 }
 
 
@@ -215,7 +218,7 @@ static ErlNifFunc nif_funcs[] =
   {"load_hostfxr_impl", 1, load_hostfxr},
   {"create_bridge", 1, create_bridge},
   {"increment", 1, increment},
-  {"load_assembly", 2, load_assembly}
+  {"load_app_from_assembly", 2, load_app_from_assembly}
 };
 
 ERL_NIF_INIT(dotnet,

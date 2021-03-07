@@ -6,7 +6,7 @@ namespace TestImpl
 {
     public class MyApp : IApp
     {
-      public ErlangPid init(ErlangRuntime runtime) {
+      public ErlangPid start(ErlangRuntime runtime) {
         return runtime.spawn();
       }
     }

@@ -1,10 +1,10 @@
 ﻿using System;
-using CsLib.Types;
+using CsLib.Erlang;
 
 namespace CsLib
 {
     public interface IApp
     {
-      ErlangPid init(ErlangRuntime runtime);
+      Pid start(Runtime runtime);
     }
 }

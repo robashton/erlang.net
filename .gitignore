@@ -45,3 +45,4 @@ priv/www/dev.*
 *.code-workspace
 Debug
 obj
+cslib.dll

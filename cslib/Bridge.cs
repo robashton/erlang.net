@@ -1,5 +1,5 @@
 using System;
-using CsLib.Types;
+using CsLib.Erlang;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Linq;
@@ -14,6 +14,7 @@ namespace CsLib
     public IntPtr increment;
     public IntPtr load_assembly;
   }
+  
 
   public class Bridge {
 
@@ -28,7 +29,7 @@ namespace CsLib
 
       args->increment = (IntPtr)(delegate*<IntPtr, int>) &IncrementWrapper;
       args->@return = (IntPtr)(delegate* <IntPtr, int>) &Return;
-      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, int>)&LoadAssemblyWrapper;
+      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr>)&LoadAssemblyWrapper;
       return 0;
     }
     
@@ -37,7 +38,7 @@ namespace CsLib
       return ((Bridge)(GCHandle.FromIntPtr(ptr).Target)).Increment();
     }
 
-    static int LoadAssemblyWrapper(IntPtr ptr, IntPtr assemblyName) {
+    static IntPtr LoadAssemblyWrapper(IntPtr ptr, IntPtr assemblyName) {
       return ((Bridge)(GCHandle.FromIntPtr(ptr).Target)).LoadAssembly(Marshal.PtrToStringAuto(assemblyName));
     }
 
@@ -50,17 +51,28 @@ namespace CsLib
       return this.value += 1;
     }
 
-   public int LoadAssembly(String assemblyName) {
-     var assembly = Assembly.LoadFrom(assemblyName);
-     var appType = assembly.GetExportedTypes()
-                     .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null);
+    // TODO: Rename to LoadAppFromAssembly or summat
+   public IntPtr LoadAssembly(String assemblyName) {
 
-     var ctor = appType.GetConstructor(Type.EmptyTypes);
+     try
+     {
+       var assembly = Assembly.LoadFrom(assemblyName);
+       var appType = assembly.GetExportedTypes()
+                       .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null);
 
-     var instance = ctor.Invoke(new object[]{});
+       var ctor = appType.GetConstructor(Type.EmptyTypes);
 
-     Console.WriteLine("Fuckadoodledo: " + assemblyName);
-     return 0;
+       var instance = ctor.Invoke(new object[]{});
+
+       var handle = GCHandle.Alloc(instance);
+       return GCHandle.ToIntPtr(handle);
+     }
+     // I think I just need to do this or we're going to end up with exceptions bubbling up into C
+     // and we'll end up leaking shit all over the place
+     catch (Exception ex) {
+       Console.WriteLine("Exception in bridge: " + ex.ToString());
+       return IntPtr.Zero;
+     }
    }
   }
 }
