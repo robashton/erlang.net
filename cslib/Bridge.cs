@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Linq;
 
 
+
 namespace CsLib
 {
   [StructLayout(LayoutKind.Sequential)]
@@ -14,6 +15,7 @@ namespace CsLib
     public IntPtr runtime;
     public IntPtr @return;
     public IntPtr load_assembly;
+    public IntPtr run_process_loop;
   }
 
   public class Bridge {
@@ -34,13 +36,18 @@ namespace CsLib
       var handle = GCHandle.Alloc(instance);
       args->handle = GCHandle.ToIntPtr(handle);
       args->@return = (IntPtr)(delegate* <IntPtr, int>) &Return;
-      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, int>)&LoadAssemblyWrapper;
+      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&LoadAssemblyWrapper;
+      args->run_process_loop = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&RunProcessLoopWrapper;
 
       return 0;
     }
     
-    static int LoadAssemblyWrapper(IntPtr ptr, IntPtr assemblyName) {
-      return ((Bridge)(GCHandle.FromIntPtr(ptr).Target)).LoadAssembly(Marshal.PtrToStringAuto(assemblyName));
+    static int LoadAssemblyWrapper(IntPtr env, IntPtr bridge, IntPtr assemblyName) {
+      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName));
+    }
+
+    static int RunProcessLoopWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
+      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).RunProcessLoop(env, fn);
     }
 
     public static int Return(IntPtr hptr) {
@@ -48,31 +55,41 @@ namespace CsLib
       return 0; 
     }
 
-   public int LoadAssembly(String filepath) {
+    public int RunProcessLoop(IntPtr env, IntPtr fn) 
+    {
+      this.runtime.SetEnv(env);
+      ProcessCallback callback = (ProcessCallback)Marshal.GetDelegateForFunctionPointer(fn, typeof(ProcessCallback));
+      ITerm term = callback(this.runtime);
+      return term.Handle();
+    }
 
-     try
-     {
-       // TODO: Ask stears what he remembers about app domains and this shit..
-       AssemblyName assemblyName = AssemblyName.GetAssemblyName(filepath);
-       Assembly assembly = Assembly.Load(assemblyName);
+    public int LoadAssembly(IntPtr env, String filepath) 
+    {
+      this.runtime.SetEnv(env);
 
-       var appType = assembly.GetExportedTypes()
-                       .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null);
+      try
+      {
+        // TODO: Ask stears what he remembers about app domains and this shit..
+        AssemblyName assemblyName = AssemblyName.GetAssemblyName(filepath);
+        Assembly assembly = Assembly.Load(assemblyName);
 
-       var ctor = appType.GetConstructor(Type.EmptyTypes);
+        var appType = assembly.GetExportedTypes()
+          .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null);
 
-       this.running_app = (IApp)ctor.Invoke(new object[]{});
+        var ctor = appType.GetConstructor(Type.EmptyTypes);
 
-       var term = this.running_app.Start(this.runtime);
+        this.running_app = (IApp)ctor.Invoke(new object[]{});
 
-       return term.Handle();
-     }
-     // I think I just need to do this or we're going to end up with exceptions bubbling up into C
-     // and we'll end up leaking shit all over the place
-     catch (Exception ex) {
-       Console.WriteLine("Exception in bridge: " + ex.ToString());
-       return 0;
-     }
-   }
+        var term = this.running_app.Start(this.runtime);
+
+        return term.Handle();
+      }
+      // I think I just need to do this or we're going to end up with exceptions bubbling up into C
+      // and we'll end up leaking shit all over the place
+      catch (Exception ex) {
+        Console.WriteLine("Exception in bridge: " + ex.ToString());
+        return 0;
+      }
+    }
   }
 }

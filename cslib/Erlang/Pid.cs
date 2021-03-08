@@ -4,17 +4,8 @@ using CsLib;
 
 namespace CsLib.Erlang 
 {
-  public sealed class Pid : ITerm
+  public sealed class Pid : Term
   {
-    int handle;
-    Runtime runtime;
-
-    internal Pid(Runtime runtime, int handle) 
-    {
-      this.handle = handle;
-      this.runtime = runtime;
-    }
-    
-    public int Handle() { return this.handle; }
+    internal Pid(Runtime runtime, int handle) : base(runtime, handle) {}
   }
 }
