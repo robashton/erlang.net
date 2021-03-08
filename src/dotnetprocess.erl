@@ -1,22 +1,28 @@
 -module(dotnetprocess).
 
--export([ init/1
-        , 'receive'/0
-        , 'receive'/1
-        ]).
+-export([ init/1 ]).
 
 init(Handle) ->
-  %% Now, this implies that we'll be doing a
-  %% super long call into C and C# - is ERL_NIF_DIRTY_JOB_CPU_BOUND (IO actually?) going to actually cut it?
-  dotnet:process_loop(Handle).
+  { ok, Bridge } = dotnet_control:get_bridge(),
+  Result = dotnet:process_init(Bridge, Handle),
+  loop(Bridge, Result).
 
-'receive'()
-  receive
-    Foo -> Foo
-  end.
+loop(_, {finish, Return}) ->
+  Return;
 
-'receive'(Timeout)
-  receive
-    Foo -> Foo
-  after Timeout -> timeout
-  end.
+loop(Bridge, {receive, Cb}) ->
+  Result = receive
+             Msg ->
+               Result = dotnet:process_msg(Bridge, Cb, Msg),
+               loop(Result)
+           end,
+  loop(Bridge, Result);
+
+loop(Bridge, {receive, Timeout, Cb}) ->
+  Result = receive
+             Msg ->
+               dotnet:process_msg(Bridge, Cb, Msg)
+           after Timeout ->
+                   dotnet:process_timeout(Bridge, Cb)
+           end,
+  loop(Bridge, Result).

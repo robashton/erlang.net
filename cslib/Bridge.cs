@@ -15,7 +15,9 @@ namespace CsLib
     public IntPtr runtime;
     public IntPtr @return;
     public IntPtr load_assembly;
-    public IntPtr run_process_loop;
+    public IntPtr process_init;
+    public IntPtr process_msg;
+    public IntPtr process_timeout;
   }
 
   public class Bridge {
@@ -37,7 +39,9 @@ namespace CsLib
       args->handle = GCHandle.ToIntPtr(handle);
       args->@return = (IntPtr)(delegate* <IntPtr, int>) &Return;
       args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&LoadAssemblyWrapper;
-      args->run_process_loop = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&RunProcessLoopWrapper;
+      args->process_init = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&ProcessInitWrapper;
+      args->process_msg = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int, int>)&ProcessMsgWrapper;
+      args->process_timeout = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&ProcessTimeoutWrapper;
 
       return 0;
     }
@@ -46,8 +50,16 @@ namespace CsLib
       return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName));
     }
 
-    static int RunProcessLoopWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
-      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).RunProcessLoop(env, fn);
+    static int ProcessInitWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
+      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessInit(env, fn);
+    }
+
+    static int ProcessMsgWrapper(IntPtr env, IntPtr bridge, IntPtr fn, int msg) {
+      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessMsg(env, fn, msg);
+    }
+
+    static int ProcessTimeoutWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
+      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessTimeout(env, fn);
     }
 
     public static int Return(IntPtr hptr) {
@@ -55,11 +67,27 @@ namespace CsLib
       return 0; 
     }
 
-    public int RunProcessLoop(IntPtr env, IntPtr fn) 
+    public int ProcessInit(IntPtr env, IntPtr fn) 
     {
       this.runtime.SetEnv(env);
-      ProcessCallback callback = (ProcessCallback)Marshal.GetDelegateForFunctionPointer(fn, typeof(ProcessCallback));
-      ITerm term = callback(this.runtime);
+      ProcessInit callback = Marshal.GetDelegateForFunctionPointer<ProcessInit>(fn);
+      ITerm term = callback();
+      return term.Handle();
+    }
+
+    public int ProcessMsg(IntPtr env, IntPtr fn, int msg) 
+    {
+      this.runtime.SetEnv(env);
+      ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fn);
+      ITerm term = callback(new Term(this.runtime, msg));
+      return term.Handle();
+    }
+
+    public int ProcessTimeout(IntPtr env, IntPtr fn) 
+    {
+      this.runtime.SetEnv(env);
+      ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fn);
+      ITerm term = callback(null);
       return term.Handle();
     }
 

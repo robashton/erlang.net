@@ -8,19 +8,28 @@ namespace TestImpl
     {
       Runtime runtime;
 
+      public int WaitCount { get; set; }
+
       public ITerm Start(Runtime runtime)
       {
         this.runtime = runtime;
-        return runtime.Spawn(Worker); 
+        return runtime.Spawn(WorkerLoop); 
       }
 
-      ITerm Worker(Runtime runtime) {
-        while(true) {
-          ITerm term = runtime.Receive(5000);
-          if(term.HasValue) { break; }
-          Console.WriteLine("Hello from C#");
+      ProcessResult WorkerLoop() {
+        return ProcessResult.Receive(5000, WorkerLoopReceive);
+      }
+
+      ProcessResult WorkerLoopReceive(ITerm msg) 
+      {
+        if(msg.HasValue) {
+          Console.WriteLine("C# received a message, allowing process to terminate");
+          return ProcessResult.Finish(this.runtime.MakeAtom("ok"));
+        } else {
+          this.WaitCount++;
+          Console.WriteLine("C# timed out waiting for message, receiving again");
+          return ProcessResult.Receive(5000, WorkerLoopReceive);
         }
-        return runtime.MakeAtom("ok");
       }
     }
 }

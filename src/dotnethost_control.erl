@@ -22,6 +22,8 @@
                , bridge :: term()
                , app :: term()
                }).
+get_bridge() ->
+  gen_server:call({local, ?SERVER}, get_brdge).
 
 start_link(HostFxr) ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [HostFxr], []).
@@ -31,8 +33,8 @@ init([HostFxr]) ->
 
   io:format(user, "Bridge created ~n", []),
   {ok, #state{ host_fxr = HostFxr
-               , bridge = Bridge
-               , app = undefind
+             , bridge = Bridge
+             , app = undefind
              }, {continue, load}}.
 
 handle_continue(load, State = #state { bridge = Bridge }) ->
@@ -46,8 +48,8 @@ handle_continue(load, State = #state { bridge = Bridge }) ->
              end),
   {noreply, State}.
 
-handle_call(not_implemented, _From, State = #state{}) ->
-  {reply, ok, State}.
+handle_call(get_bridge, _From, State = #state{ bridge = Bridge }) ->
+  {reply, { ok, Bridge }, State}.
 
 handle_cast(not_implemented, State) ->
   {noreply, State}.
