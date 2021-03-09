@@ -5,7 +5,7 @@ namespace CsLib.Erlang
 {
   public class Term : ITerm
   {
-    int handle;
+    Int64 handle;
     Runtime runtime;
 
     public bool HasValue 
@@ -13,12 +13,12 @@ namespace CsLib.Erlang
       get { return handle > 0; }
     }
 
-    internal Term(Runtime runtime, int handle) 
+    internal Term(Runtime runtime, Int64 handle) 
     {
       this.handle = handle;
       this.runtime = runtime;
     }
     
-    public int Handle() { return this.handle; }
+    public Int64 Handle() { return this.handle; }
   }
 }

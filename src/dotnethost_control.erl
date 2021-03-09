@@ -43,7 +43,7 @@ init([HostFxr]) ->
   io:format(user, "Bridge created ~n", []),
   {ok, #state{ host_fxr = HostFxr
              , bridge = Bridge
-             , app = undefind
+             , app = undefined
              }, {continue, load}}.
 
 handle_continue(load, State = #state { bridge = Bridge }) ->
@@ -69,11 +69,11 @@ handle_info({call_fn, Args ={ M, F, A }, Resource}, State = #state{ bridge = Bri
   {noreply, State};
 
 handle_info({started, Pid}, State) ->
-  io:format(user, ".NET app was started ~n", []),
+  io:format(user, ".NET app was started on pid ~p ~n", [Pid]),
   {noreply, State#state { app = Pid } };
 
 handle_info(Other, State = #state{ bridge = Bridge }) ->
-  io:format(user, "Got a weird message from somewhere ~p~n", [Other]),
+%%  io:format(user, "Got a weird message from somewhere ~p~n", [Other]),
   {noreply, State}.
 
 terminate(Reason, _State) ->

@@ -37,38 +37,38 @@ namespace CsLib
 
       var handle = GCHandle.Alloc(instance);
       args->handle = GCHandle.ToIntPtr(handle);
-      args->@return = (IntPtr)(delegate* <IntPtr, int>) &Return;
-      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&LoadAssemblyWrapper;
-      args->process_init = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&ProcessInitWrapper;
-      args->process_msg = (IntPtr)(delegate*<IntPtr, IntPtr, int, int, int>)&ProcessMsgWrapper;
-      args->process_timeout = (IntPtr)(delegate*<IntPtr, IntPtr, int, int>)&ProcessTimeoutWrapper;
+      args->@return = (IntPtr)(delegate* <IntPtr, Int64>) &Return;
+      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, Int64>)&LoadAssemblyWrapper;
+      args->process_init = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, Int64>)&ProcessInitWrapper;
+      args->process_msg = (IntPtr)(delegate*<IntPtr, IntPtr, Int64, Int64, Int64>)&ProcessMsgWrapper;
+      args->process_timeout = (IntPtr)(delegate*<IntPtr, IntPtr, Int64, Int64>)&ProcessTimeoutWrapper;
 
       return 0;
     }
 
-    static int LoadAssemblyWrapper(IntPtr env, IntPtr bridge, IntPtr assemblyName) {
+    static Int64 LoadAssemblyWrapper(IntPtr env, IntPtr bridge, IntPtr assemblyName) {
       Console.WriteLine("In LoadAssemblyWrapper");
       var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName));
       Console.WriteLine("Done With LoadAssemblyWrapper");
       return res;
     }
 
-    static int ProcessInitWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
+    static Int64 ProcessInitWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
       Console.WriteLine("In ProcessInitWrapper");
       var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessInit(env, fn);
       Console.WriteLine("Done With ProcessInitWrapper");
       return res;
     }
 
-    static int ProcessMsgWrapper(IntPtr env, IntPtr bridge, int fn, int msg) {
+    static Int64 ProcessMsgWrapper(IntPtr env, IntPtr bridge, Int64 fn, Int64 msg) {
       return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessMsg(env, fn, msg);
     }
 
-    static int ProcessTimeoutWrapper(IntPtr env, IntPtr bridge, int fn) {
+    static Int64 ProcessTimeoutWrapper(IntPtr env, IntPtr bridge, Int64 fn) {
       return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessTimeout(env, fn);
     }
 
-    public static int Return(IntPtr hptr) {
+    public static Int64 Return(IntPtr hptr) {
       GCHandle.FromIntPtr(hptr).Free();
       return 0;
     }
@@ -78,17 +78,18 @@ namespace CsLib
     // and then mirroring that on the return
     // All the other process callbacks have the C# create the resource and unmap it
     // but the code is presently assymetrical so that needs sorting too
-    public int ProcessInit(IntPtr env, IntPtr fn)
+    public Int64 ProcessInit(IntPtr env, IntPtr fn)
     {
       this.runtime.SetEnv(env);
       ProcessInit callback = Marshal.GetDelegateForFunctionPointer<ProcessInit>(fn);
       Console.WriteLine("Creating new process context");
       ITerm term = callback(new ProcessContext(this.runtime));
       Console.WriteLine("Created new process context");
+
       return term.Handle();
     }
 
-    public int ProcessMsg(IntPtr env, int fn, int msg)
+    public Int64 ProcessMsg(IntPtr env, Int64 fn, Int64 msg)
     {
       this.runtime.SetEnv(env);
 
@@ -101,7 +102,7 @@ namespace CsLib
       return term.Handle();
     }
 
-    public int ProcessTimeout(IntPtr env, int fn)
+    public Int64 ProcessTimeout(IntPtr env, Int64 fn)
     {
       this.runtime.SetEnv(env);
 
@@ -114,7 +115,7 @@ namespace CsLib
       return term.Handle();
     }
 
-    public int LoadAssembly(IntPtr env, String filepath)
+    public Int64 LoadAssembly(IntPtr env, String filepath)
     {
       this.runtime.SetEnv(env);
 

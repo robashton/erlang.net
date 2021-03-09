@@ -33,7 +33,7 @@ priv/cslib.runtimeconfig.json: cslib/bin/$(CONFIGURATION)/net5.0/cslib.runtimeco
 
 cslib/bin/$(CONFIGURATION)/net5.0/cslib.runtimeconfig.json: cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll
 
-cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll: cslib/*.cs cslib/cslib.csproj
+cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll: cslib/*.cs cslib/*/*.cs cslib/cslib.csproj
 	cd cslib && dotnet build
 
 testimpl/bin/$(CONFIGURATION)/net5.0/testimpl.dll: testimpl/*.cs testimpl/testimpl.csproj

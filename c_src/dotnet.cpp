@@ -17,6 +17,15 @@
 
 typedef void* GCHANDLE;
 
+#ifdef TRACE_ENABLE
+    #define TRACE(...) {      \
+      fprintf(__VA_ARGS__);   \
+    }
+#else
+    #define TRACE(...) {} 
+#endif
+  
+
 typedef struct nif_globals_ {
   ErlNifResourceType *fn;
   ErlNifResourceType *hostfxr_resource;
@@ -127,21 +136,21 @@ static ERL_NIF_TERM call_erlang_fn(ErlNifEnv* env, ERL_NIF_TERM mfa) {
   // We'll not release it, cos Erlang will think it's finished with as soon as the callback is invoked
   ERL_NIF_TERM resource = enif_make_resource(env, callback);
 
-  printf("Sending up to erlang \n");
+  TRACE("Sending up to erlang \n");
   enif_send(NULL, &globals->owner, env, enif_make_tuple3(env,
         enif_make_atom(env, "call_fn"),
         mfa,
         resource)
       );
 
-  printf("Spinning \n");
+  TRACE("Spinning \n");
 
   // cheeky spin-wait on this being written in the nif:callback
   while(!callback->complete) {
     sleep(1);
   }
 
-  printf("Spun \n");
+  TRACE("Spun \n");
 
   // TODO: This probably needs copying into our env?
   // as it originally came from our 'dotnethost_control' process
@@ -163,7 +172,7 @@ static ERL_NIF_TERM runtime_spawn(ErlNifEnv* env, void* fn) {
   ptr->data = fn;
   ERL_NIF_TERM payload = enif_make_resource(env, ptr);
 
-  printf("Sending up to erlang \n");
+  TRACE("Sending up to erlang \n");
   ERL_NIF_TERM result = call_erlang_fn(env,
       enif_make_tuple3(env,
         enif_make_atom(env, "dotnetprocess"),
@@ -216,7 +225,7 @@ static ERL_NIF_TERM runtime_release_pointer_resource(ErlNifEnv* env, ERL_NIF_TER
     enif_release_resource(ptr->data);
     ptr->data = NULL;
   }
-  return NULL;
+  return enif_make_atom(env, "ok");
 }
 
 static erlang_runtime* create_runtime(ErlNifEnv* env) {
@@ -246,7 +255,7 @@ uint8_t get_dotnet_load_assembly(const char_t *config_path, hostfxr_resource* ho
 
     if (rc != 0 || cxt == NULL)
     {
-        printf("Init failed: %d \n", rc);
+        TRACE("Init failed: %d \n", rc);
         hostfxr->close_fptr(cxt);
         return 0;
     }
@@ -257,7 +266,7 @@ uint8_t get_dotnet_load_assembly(const char_t *config_path, hostfxr_resource* ho
         &load_assembly_and_get_function_pointer);
 
     if (rc != 0 || load_assembly_and_get_function_pointer == NULL)
-        printf("Get delegate failed: %d", rc);
+        TRACE("Get delegate failed: %d", rc);
 
     hostfxr->close_fptr(cxt);
     hostfxr->load_assembly_and_get_function_pointer = (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
@@ -271,7 +280,7 @@ uint8_t load_hostfxr(hostfxr_resource* hostfxr)
   int rc = get_hostfxr_path(buffer, &buffer_size, NULL);
 
   if (rc != 0) {
-    printf("Failed to find hostfxr path \n");
+    TRACE("Failed to find hostfxr path \n");
     return 0;
   }
 
@@ -311,13 +320,13 @@ static ERL_NIF_TERM load_hostfxr(ErlNifEnv* env, int argc, const ERL_NIF_TERM ar
 
   if(!load_hostfxr(hostfxr)) {
     enif_release_resource(hostfxr);
-    printf("Completely failed to load hostfxr \n");
+    TRACE("Completely failed to load hostfxr \n");
     return -1;
   }
 
   if(!get_dotnet_load_assembly(reinterpret_cast<const char_t*>(runtimeconfig.data), hostfxr)) {
     enif_release_resource(hostfxr);
-    printf("Failed to get LoadAssembly \n");
+    TRACE("Failed to get LoadAssembly \n");
     return -1;
   }
 
@@ -338,7 +347,7 @@ static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
   component_entry_point_fn fn;
 
   if(rc = hostfxr->load_assembly_and_get_function_pointer("priv/cslib.dll", "CsLib.Bridge, CsLib", "Create", NULL, NULL, (void**)&fn)) {
-    printf("Sad trombone %d \n", rc);
+    TRACE("Sad trombone %d \n", rc);
     return enif_make_atom(env, "nope");
   }
 
@@ -406,10 +415,11 @@ static ERL_NIF_TERM process_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM ar
   if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
   if(!enif_get_resource(env, argv[1], globals->pointer_resource, (void**)&fn_ptr)) { return param_error(env, "fn_ptr"); }
 
-  printf("About to perform process init\r\n");
+  TRACE("About to perform process init\r\n");
   auto result = context->process_init(env, context->gchandle, fn_ptr->data);
-  printf("Process init done with result %lu\r\n", result);
-  return enif_make_copy(env, result);
+
+  TRACE("Process init done with result %lu\r\n", result);
+  return result;
 }
 
 static ERL_NIF_TERM process_msg(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {

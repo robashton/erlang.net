@@ -5,7 +5,7 @@ namespace CsLib
 {
     public interface ITerm
     {
-      int Handle();
+      Int64 Handle();
       bool HasValue 
       {
         get;

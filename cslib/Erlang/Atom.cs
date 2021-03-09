@@ -5,6 +5,6 @@ namespace CsLib.Erlang
 {
   public sealed class Atom : Term
   {
-    internal Atom(Runtime runtime, int handle) : base(runtime, handle) {}
+    internal Atom(Runtime runtime, Int64 handle) : base(runtime, handle) {}
   }
 }
