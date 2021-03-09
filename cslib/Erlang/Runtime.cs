@@ -30,7 +30,7 @@ namespace CsLib.Erlang
     private delegate* <IntPtr, int, int, int, int> makeTuple3;
     private delegate* <IntPtr, IntPtr, int> makePointerResource;
     private delegate* <IntPtr, int, IntPtr> unpackPointerResource;
-    private delegate* <IntPtr, IntPtr, int> releasePointerResource;
+    private delegate* <IntPtr, int, int> releasePointerResource;
 
     private ThreadLocal<IntPtr> env = new ThreadLocal<IntPtr>();
 
