@@ -22,9 +22,9 @@ typedef void* GCHANDLE;
       fprintf(__VA_ARGS__);   \
     }
 #else
-    #define TRACE(...) {} 
+    #define TRACE(...) {}
 #endif
-  
+
 
 typedef struct nif_globals_ {
   ErlNifResourceType *fn;
@@ -52,7 +52,7 @@ typedef struct pointer_resource_ {
 // a Process Independent Env and (presumably) constantly copy stuff about
 typedef ERL_NIF_TERM (*spawn_fn)(ErlNifEnv* env, void* fn);
 typedef ERL_NIF_TERM (*make_atom_fn)(ErlNifEnv* env, const char_t* input);
-typedef ERL_NIF_TERM (*make_int_fn)(ErlNifEnv* env, int value);
+typedef ERL_NIF_TERM (*make_int_fn)(ErlNifEnv* env, int32_t value);
 typedef ERL_NIF_TERM (*make_tuple2_fn)(ErlNifEnv* env, ERL_NIF_TERM a, ERL_NIF_TERM b);
 typedef ERL_NIF_TERM (*make_tuple3_fn)(ErlNifEnv* env, ERL_NIF_TERM a, ERL_NIF_TERM b, ERL_NIF_TERM c);
 typedef ERL_NIF_TERM (*make_pointer_resource_fn)(ErlNifEnv* env, void* ptr);
@@ -188,7 +188,7 @@ static ERL_NIF_TERM runtime_make_atom(ErlNifEnv* env, const char_t* data) {
   return enif_make_atom(env, data);
 }
 
-static ERL_NIF_TERM runtime_make_int(ErlNifEnv* env, int value) {
+static ERL_NIF_TERM runtime_make_int(ErlNifEnv* env, int32_t value) {
   return enif_make_int(env, value);
 }
 

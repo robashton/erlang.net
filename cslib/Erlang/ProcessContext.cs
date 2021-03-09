@@ -3,7 +3,7 @@ using CsLib;
 
 using System.Runtime.InteropServices;
 
-namespace CsLib.Erlang 
+namespace CsLib.Erlang
 {
   public sealed class ProcessContext
   {
@@ -18,7 +18,7 @@ namespace CsLib.Erlang
       var tuple = this.runtime.MakeTuple2(
                     this.runtime.MakeAtom("receive"),
                     ptrResource);
-      return new ProcessResult(this.runtime, tuple.Handle());
+      return new ProcessResult(this.runtime, tuple.Native);
     }
 
     public ITerm Receive(int timeout, ProcessMsg callback) {
@@ -28,12 +28,12 @@ namespace CsLib.Erlang
                     this.runtime.MakeAtom("receive"),
                     this.runtime.MakeInt(timeout),
                     ptrResource);
-      return new ProcessResult(this.runtime, tuple.Handle());
+      return new ProcessResult(this.runtime, tuple.Native);
     }
 
     public ProcessResult Finish(ITerm result) {
       var tuple = this.runtime.MakeTuple2(this.runtime.MakeAtom("finish"), result);
-      return new ProcessResult(this.runtime, tuple.Handle());
+      return new ProcessResult(this.runtime, tuple.Native);
     }
   }
 }

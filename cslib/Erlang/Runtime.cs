@@ -23,14 +23,14 @@ namespace CsLib.Erlang
 
   public unsafe sealed class Runtime
   {
-    private delegate* <IntPtr, IntPtr, Int64> spawn;
-    private delegate* <IntPtr, IntPtr, Int64> makeAtom;
-    private delegate* <IntPtr, Int64, Int64> makeInt;
-    private delegate* <IntPtr, Int64, Int64, Int64> makeTuple2;
-    private delegate* <IntPtr, Int64, Int64, Int64, Int64> makeTuple3;
-    private delegate* <IntPtr, IntPtr, Int64> makePointerResource;
-    private delegate* <IntPtr, Int64, IntPtr> unpackPointerResource;
-    private delegate* <IntPtr, Int64, Int64> releasePointerResource;
+    private delegate* <IntPtr, IntPtr, ErlNifTerm> spawn;
+    private delegate* <IntPtr, IntPtr, ErlNifTerm> makeAtom;
+    private delegate* <IntPtr, Int32, ErlNifTerm> makeInt;
+    private delegate* <IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> makeTuple2;
+    private delegate* <IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm, ErlNifTerm> makeTuple3;
+    private delegate* <IntPtr, IntPtr, ErlNifTerm> makePointerResource;
+    private delegate* <IntPtr, ErlNifTerm, IntPtr> unpackPointerResource;
+    private delegate* <IntPtr, ErlNifTerm, ErlNifTerm> releasePointerResource;
 
     // TODO:
     private static ThreadLocal<IntPtr> env = new ThreadLocal<IntPtr>();
@@ -41,14 +41,14 @@ namespace CsLib.Erlang
 
     internal Runtime(IntPtr runtime) {
       RuntimeImpl* impl = (RuntimeImpl*)runtime;
-      this.spawn = (delegate* <IntPtr, IntPtr, Int64>)impl->spawn;
-      this.makeAtom = (delegate* <IntPtr, IntPtr, Int64>)impl->makeAtom;
-      this.makeInt = (delegate* <IntPtr, Int64, Int64>)impl->makeInt;
-      this.makeTuple2 = (delegate* <IntPtr, Int64, Int64, Int64>)impl->makeTuple2;
-      this.makeTuple3 = (delegate* <IntPtr, Int64, Int64, Int64, Int64>)impl->makeTuple3;
-      this.makePointerResource = (delegate* <IntPtr, IntPtr, Int64 >)impl->makePointerResource;
-      this.unpackPointerResource = (delegate* <IntPtr, Int64, IntPtr >)impl->unpackPointerResource;
-      this.releasePointerResource = (delegate* <IntPtr, Int64, Int64 >)impl->releasePointerResource;
+      this.spawn = (delegate* <IntPtr, IntPtr, ErlNifTerm>)impl->spawn;
+      this.makeAtom = (delegate* <IntPtr, IntPtr, ErlNifTerm>)impl->makeAtom;
+      this.makeInt = (delegate* <IntPtr, Int32, ErlNifTerm>)impl->makeInt;
+      this.makeTuple2 = (delegate* <IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm>)impl->makeTuple2;
+      this.makeTuple3 = (delegate* <IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm, ErlNifTerm>)impl->makeTuple3;
+      this.makePointerResource = (delegate* <IntPtr, IntPtr, ErlNifTerm >)impl->makePointerResource;
+      this.unpackPointerResource = (delegate* <IntPtr, ErlNifTerm, IntPtr >)impl->unpackPointerResource;
+      this.releasePointerResource = (delegate* <IntPtr, ErlNifTerm, ErlNifTerm >)impl->releasePointerResource;
     }
 
     public Pid Spawn(ProcessInit fn)
@@ -66,13 +66,13 @@ namespace CsLib.Erlang
       return new Atom(this, result);
     }
 
-    public Int MakeInt(Int64 value) {
+    public Int MakeInt(Int32 value) {
       var result = this.makeInt(env.Value, value);
       return new Int(this, result);
     }
 
     public Tuple MakeTuple2(ITerm a, ITerm b) {
-      var result = this.makeTuple2(env.Value, a.Handle(), b.Handle());
+      var result = this.makeTuple2(env.Value, a.Native, b.Native);
 
       Console.WriteLine("wrapping up a tuple with " + result.ToString());
 
@@ -80,7 +80,7 @@ namespace CsLib.Erlang
     }
 
     public Tuple MakeTuple3(ITerm a, ITerm b, ITerm c) {
-      var result = this.makeTuple3(env.Value, a.Handle(), b.Handle(), c.Handle());
+      var result = this.makeTuple3(env.Value, a.Native, b.Native, c.Native);
       return new Tuple(this, result);
     }
 
@@ -90,11 +90,11 @@ namespace CsLib.Erlang
     }
 
     public IntPtr UnpackPointerResource(ITerm c) {
-      return this.unpackPointerResource(env.Value, c.Handle());
+      return this.unpackPointerResource(env.Value, c.Native);
     }
 
     public Term ReleasePointerResource(ITerm c) {
-      var result = this.releasePointerResource(env.Value, c.Handle());
+      var result = this.releasePointerResource(env.Value, c.Native);
       return new Term(this, result);
     }
   }
