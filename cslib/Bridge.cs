@@ -40,40 +40,40 @@ namespace CsLib
 
       var handle = GCHandle.Alloc(instance);
       args->handle = GCHandle.ToIntPtr(handle);
-      args->@return = (IntPtr)(delegate* <IntPtr, Int64>) &Return;
-      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, Int64>)&LoadAssemblyWrapper;
-      args->process_init = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, Int64>)&ProcessInitWrapper;
-      args->process_msg = (IntPtr)(delegate*<IntPtr, IntPtr, Int64, Int64, Int64>)&ProcessMsgWrapper;
-      args->process_timeout = (IntPtr)(delegate*<IntPtr, IntPtr, Int64, Int64>)&ProcessTimeoutWrapper;
+      args->@return = (IntPtr)(delegate* <IntPtr, ErlNifTerm>) &Return;
+      args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, ErlNifTerm>)&LoadAssemblyWrapper;
+      args->process_init = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, ErlNifTerm>)&ProcessInitWrapper;
+      args->process_msg = (IntPtr)(delegate*<IntPtr, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm>)&ProcessMsgWrapper;
+      args->process_timeout = (IntPtr)(delegate*<IntPtr, IntPtr, ErlNifTerm, ErlNifTerm>)&ProcessTimeoutWrapper;
 
       return 0;
     }
 
-    static Int64 LoadAssemblyWrapper(IntPtr env, IntPtr bridge, IntPtr assemblyName) {
+    static ErlNifTerm LoadAssemblyWrapper(IntPtr env, IntPtr bridge, IntPtr assemblyName) {
       Console.WriteLine("In LoadAssemblyWrapper");
       var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName));
       Console.WriteLine("Done With LoadAssemblyWrapper");
       return res;
     }
 
-    static Int64 ProcessInitWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
+    static ErlNifTerm ProcessInitWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
       Console.WriteLine("In ProcessInitWrapper");
       var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessInit(env, fn);
       Console.WriteLine("Done With ProcessInitWrapper");
       return res;
     }
 
-    static Int64 ProcessMsgWrapper(IntPtr env, IntPtr bridge, Int64 fn, Int64 msg) {
+    static ErlNifTerm ProcessMsgWrapper(IntPtr env, IntPtr bridge, ErlNifTerm fn, ErlNifTerm msg) {
       return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessMsg(env, fn, msg);
     }
 
-    static Int64 ProcessTimeoutWrapper(IntPtr env, IntPtr bridge, Int64 fn) {
+    static ErlNifTerm ProcessTimeoutWrapper(IntPtr env, IntPtr bridge, ErlNifTerm fn) {
       return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessTimeout(env, fn);
     }
 
-    public static Int64 Return(IntPtr hptr) {
+    public static ErlNifTerm Return(IntPtr hptr) {
       GCHandle.FromIntPtr(hptr).Free();
-      return 0;
+      return ErlNifTerm.Zero;
     }
 
     // NOTE: A big-ass todo here, ProcessInit is currently passed to C via 'spawn'
@@ -81,7 +81,7 @@ namespace CsLib
     // and then mirroring that on the return
     // All the other process callbacks have the C# create the resource and unmap it
     // but the code is presently assymetrical so that needs sorting too
-    public Int64 ProcessInit(IntPtr env, IntPtr fn)
+    public ErlNifTerm ProcessInit(IntPtr env, IntPtr fn)
     {
       this.runtime.SetEnv(env);
       ProcessInit callback = Marshal.GetDelegateForFunctionPointer<ProcessInit>(fn);
@@ -89,10 +89,10 @@ namespace CsLib
       ITerm term = callback(new ProcessContext(this.runtime));
       Console.WriteLine("Created new process context");
 
-      return term.Handle();
+      return term.Native;
     }
 
-    public Int64 ProcessMsg(IntPtr env, Int64 fn, Int64 msg)
+    public ErlNifTerm ProcessMsg(IntPtr env, ErlNifTerm fn, ErlNifTerm msg)
     {
       this.runtime.SetEnv(env);
 
@@ -102,10 +102,10 @@ namespace CsLib
 
       ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fnPtr);
       ITerm term = callback(new ProcessContext(this.runtime), new Term(this.runtime, msg));
-      return term.Handle();
+      return term.Native;
     }
 
-    public Int64 ProcessTimeout(IntPtr env, Int64 fn)
+    public ErlNifTerm ProcessTimeout(IntPtr env, ErlNifTerm fn)
     {
       this.runtime.SetEnv(env);
 
@@ -115,10 +115,10 @@ namespace CsLib
 
       ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fnPtr);
       ITerm term = callback(new ProcessContext(this.runtime), null);
-      return term.Handle();
+      return term.Native;
     }
 
-    public Int64 LoadAssembly(IntPtr env, String filepath)
+    public ErlNifTerm LoadAssembly(IntPtr env, String filepath)
     {
       this.runtime.SetEnv(env);
 
@@ -138,13 +138,13 @@ namespace CsLib
 
         var term = this.running_app.Start(this.runtime);
 
-        return term.Handle();
+        return term.Native;
       }
       // I think I just need to do this or we're going to end up with exceptions bubbling up into C
       // and we'll end up leaking shit all over the place
       catch (Exception ex) {
         Console.WriteLine("Exception in bridge: " + ex.ToString());
-        return 0;
+        return this.runtime.MakeAtom("error").Native;
       }
     }
   }
