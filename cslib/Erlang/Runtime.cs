@@ -10,6 +10,7 @@ namespace CsLib.Erlang
   {
     public IntPtr spawn;
     public IntPtr makeAtom;
+    public IntPtr makeInt;
     public IntPtr makeTuple2;
     public IntPtr makeTuple3;
     public IntPtr makePointerResource;
@@ -17,18 +18,19 @@ namespace CsLib.Erlang
     public IntPtr releasePointerResource;
   }
 
-  public delegate ITerm ProcessInit();
-  public delegate ITerm ProcessMsg(ITerm msg);
+  public delegate ITerm ProcessInit(ProcessContext ctx);
+  public delegate ITerm ProcessMsg(ProcessContext ctx, ITerm msg);
 
   public unsafe sealed class Runtime 
   {
     private delegate* <IntPtr, IntPtr, int> spawn;
     private delegate* <IntPtr, IntPtr, int> makeAtom;
+    private delegate* <IntPtr, int, int> makeInt;
     private delegate* <IntPtr, int, int, int> makeTuple2;
     private delegate* <IntPtr, int, int, int, int> makeTuple3;
     private delegate* <IntPtr, IntPtr, int> makePointerResource;
     private delegate* <IntPtr, int, IntPtr> unpackPointerResource;
-    private delegate* <IntPtr, int, int> releasePointerResource;
+    private delegate* <IntPtr, IntPtr, int> releasePointerResource;
 
     private ThreadLocal<IntPtr> env = new ThreadLocal<IntPtr>();
 
@@ -40,6 +42,7 @@ namespace CsLib.Erlang
       RuntimeImpl* impl = (RuntimeImpl*)runtime;
       this.spawn = (delegate* <IntPtr, IntPtr, int>)impl->spawn;
       this.makeAtom = (delegate* <IntPtr, IntPtr, int>)impl->makeAtom;
+      this.makeInt = (delegate* <IntPtr, int, int>)impl->makeInt;
       this.makeTuple2 = (delegate* <IntPtr, int, int, int>)impl->makeTuple2;
       this.makeTuple3 = (delegate* <IntPtr, int, int, int, int>)impl->makeTuple3;
       this.makePointerResource = (delegate* <IntPtr, IntPtr, int >)impl->makePointerResource;
@@ -59,6 +62,11 @@ namespace CsLib.Erlang
       var result = this.makeAtom(this.env.Value, strPtr);
       Marshal.FreeHGlobal(strPtr);
       return new Atom(this, result);
+    }
+
+    public Int MakeInt(int value) {
+      var result = this.makeInt(this.env.Value, value);
+      return new Int(this, result);
     }
 
     public Tuple MakeTuple2(ITerm a, ITerm b) {

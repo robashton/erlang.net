@@ -2,23 +2,25 @@
 
 -export([ init/1 ]).
 
-init(Handle) ->
-  { ok, Bridge } = dotnet_control:get_bridge(),
-  Result = dotnet:process_init(Bridge, Handle),
-  loop(Bridge, Result).
+init(Callback) ->
+  io:format(user, "Setting up a process with a callback ~p ~n", [ Callback ]),
+  spawn_link(fun() ->
+                 { ok, Bridge } = dotnethost_control:get_bridge(),
+                 Result = dotnet:process_init(Bridge, Callback),
+                 loop(Bridge, Callback)
+             end).
 
 loop(_, {finish, Return}) ->
   Return;
 
-loop(Bridge, {receive, Cb}) ->
+loop(Bridge, {'receive', Cb}) ->
   Result = receive
              Msg ->
-               Result = dotnet:process_msg(Bridge, Cb, Msg),
-               loop(Result)
+               dotnet:process_msg(Bridge, Cb, Msg)
            end,
   loop(Bridge, Result);
 
-loop(Bridge, {receive, Timeout, Cb}) ->
+loop(Bridge, {'receive', Timeout, Cb}) ->
   Result = receive
              Msg ->
                dotnet:process_msg(Bridge, Cb, Msg)

@@ -16,19 +16,19 @@ namespace TestImpl
         return runtime.Spawn(WorkerLoop); 
       }
 
-      ProcessResult WorkerLoop() {
-        return ProcessResult.Receive(5000, WorkerLoopReceive);
+      ProcessResult WorkerLoop(ProcessContext ctx) {
+        return ctx.Receive(5000, WorkerLoopReceive);
       }
 
-      ProcessResult WorkerLoopReceive(ITerm msg) 
+      ProcessResult WorkerLoopReceive(ProcessContext ctx, ITerm msg) 
       {
         if(msg.HasValue) {
           Console.WriteLine("C# received a message, allowing process to terminate");
-          return ProcessResult.Finish(this.runtime.MakeAtom("ok"));
+          return ctx.Finish(this.runtime.MakeAtom("ok"));
         } else {
           this.WaitCount++;
           Console.WriteLine("C# timed out waiting for message, receiving again");
-          return ProcessResult.Receive(5000, WorkerLoopReceive);
+          return ctx.Receive(5000, WorkerLoopReceive);
         }
       }
     }

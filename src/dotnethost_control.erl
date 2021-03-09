@@ -5,8 +5,8 @@
 
 -define(SERVER, ?MODULE).
 
--export([
-         start_link/1
+-export([ start_link/1
+        , get_bridge/0
         ]).
 
 -export([ init/1
@@ -23,13 +23,19 @@
                , app :: term()
                }).
 get_bridge() ->
-  gen_server:call({local, ?SERVER}, get_brdge).
+  io:format(user, "doing a lookup  ~p~n", []),
+  { bridge, Bridge } = ets:lookup(control, bridge),
+  io:format(user, "did a lookup  ~p~n", []),
+  { ok, Bridge }.
 
 start_link(HostFxr) ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [HostFxr], []).
 
 init([HostFxr]) ->
   {ok, Bridge} = dotnet:create_bridge(HostFxr),
+
+  ets:new(control, [set, protected, named_table]),
+  ets:insert(control, {bridge, Bridge}),
 
   io:format(user, "Bridge created ~n", []),
   {ok, #state{ host_fxr = HostFxr

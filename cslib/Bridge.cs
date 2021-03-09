@@ -40,8 +40,8 @@ namespace CsLib
       args->@return = (IntPtr)(delegate* <IntPtr, int>) &Return;
       args->load_assembly = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&LoadAssemblyWrapper;
       args->process_init = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&ProcessInitWrapper;
-      args->process_msg = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int, int>)&ProcessMsgWrapper;
-      args->process_timeout = (IntPtr)(delegate*<IntPtr, IntPtr, IntPtr, int>)&ProcessTimeoutWrapper;
+      args->process_msg = (IntPtr)(delegate*<IntPtr, IntPtr, int, int, int>)&ProcessMsgWrapper;
+      args->process_timeout = (IntPtr)(delegate*<IntPtr, IntPtr, int, int>)&ProcessTimeoutWrapper;
 
       return 0;
     }
@@ -54,11 +54,11 @@ namespace CsLib
       return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessInit(env, fn);
     }
 
-    static int ProcessMsgWrapper(IntPtr env, IntPtr bridge, IntPtr fn, int msg) {
+    static int ProcessMsgWrapper(IntPtr env, IntPtr bridge, int fn, int msg) {
       return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessMsg(env, fn, msg);
     }
 
-    static int ProcessTimeoutWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
+    static int ProcessTimeoutWrapper(IntPtr env, IntPtr bridge, int fn) {
       return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessTimeout(env, fn);
     }
 
@@ -67,27 +67,42 @@ namespace CsLib
       return 0; 
     }
 
+    // NOTE: A big-ass todo here, ProcessInit is currently passed to C via 'spawn'
+    // and the C is responsible for turning the void* into a resource to go to erlang 
+    // and then mirroring that on the return
+    // All the other process callbacks have the C# create the resource and unmap it
+    // but the code is presently assymetrical so that needs sorting too
     public int ProcessInit(IntPtr env, IntPtr fn) 
     {
       this.runtime.SetEnv(env);
       ProcessInit callback = Marshal.GetDelegateForFunctionPointer<ProcessInit>(fn);
-      ITerm term = callback();
+      ITerm term = callback(new ProcessContext(this.runtime));
       return term.Handle();
     }
 
-    public int ProcessMsg(IntPtr env, IntPtr fn, int msg) 
+    public int ProcessMsg(IntPtr env, int fn, int msg) 
     {
       this.runtime.SetEnv(env);
-      ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fn);
-      ITerm term = callback(new Term(this.runtime, msg));
+
+      var fnResource = new Term(this.runtime, fn);
+      IntPtr fnPtr = this.runtime.UnpackPointerResource(fnResource);
+      this.runtime.ReleasePointerResource(fnResource);
+
+      ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fnPtr);
+      ITerm term = callback(new ProcessContext(this.runtime), new Term(this.runtime, msg));
       return term.Handle();
     }
 
-    public int ProcessTimeout(IntPtr env, IntPtr fn) 
+    public int ProcessTimeout(IntPtr env, int fn) 
     {
       this.runtime.SetEnv(env);
-      ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fn);
-      ITerm term = callback(null);
+
+      var fnResource = new Term(this.runtime, fn);
+      IntPtr fnPtr = this.runtime.UnpackPointerResource(fnResource);
+      this.runtime.ReleasePointerResource(fnResource);
+
+      ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fnPtr);
+      ITerm term = callback(new ProcessContext(this.runtime), null);
       return term.Handle();
     }
 

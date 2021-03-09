@@ -3,6 +3,9 @@
 -export([ create_bridge/1
         , load_hostfxr/0
         , run_app_from_assembly/2
+        , process_init/2
+        , process_msg/3
+        , process_timeout/2
         , callback/3
         ]).
 
@@ -22,6 +25,15 @@ run_app_from_assembly(_Bridge, _AssemblyName) ->
   erlang:nif_error("Nif not loaded").
 
 callback(_Bridge, _Resource, _Result) ->
+  erlang:nif_error("Nif not loaded").
+
+process_init(_Bridge, Cb) ->
+  erlang:nif_error("Nif not loaded").
+
+process_msg(_Bridge, Cb, Msg) ->
+  erlang:nif_error("Nif not loaded").
+
+process_timeout(_Bridge, Cb) ->
   erlang:nif_error("Nif not loaded").
 
 load_hostfxr_impl(_RuntimeConfig) ->
