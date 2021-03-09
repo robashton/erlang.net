@@ -13,14 +13,15 @@ namespace TestImpl
       public ITerm Start(Runtime runtime)
       {
         this.runtime = runtime;
-        return runtime.Spawn(WorkerLoop); 
+        return runtime.Spawn(WorkerLoop);
       }
 
       ProcessResult WorkerLoop(ProcessContext ctx) {
+        Console.WriteLine("In WorkerLoop (Init)");
         return ctx.Receive(5000, WorkerLoopReceive);
       }
 
-      ProcessResult WorkerLoopReceive(ProcessContext ctx, ITerm msg) 
+      ProcessResult WorkerLoopReceive(ProcessContext ctx, ITerm msg)
       {
         if(msg.HasValue) {
           Console.WriteLine("C# received a message, allowing process to terminate");

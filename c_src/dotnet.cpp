@@ -143,7 +143,7 @@ static ERL_NIF_TERM call_erlang_fn(ErlNifEnv* env, ERL_NIF_TERM mfa) {
 
   printf("Spun \n");
 
-  // TODO: This probably needs copying into our env? 
+  // TODO: This probably needs copying into our env?
   // as it originally came from our 'dotnethost_control' process
   ERL_NIF_TERM result = callback->result;
 
@@ -165,7 +165,7 @@ static ERL_NIF_TERM runtime_spawn(ErlNifEnv* env, void* fn) {
 
   printf("Sending up to erlang \n");
   ERL_NIF_TERM result = call_erlang_fn(env,
-      enif_make_tuple3(env, 
+      enif_make_tuple3(env,
         enif_make_atom(env, "dotnetprocess"),
         enif_make_atom(env, "init"),
           enif_make_list1(env, payload)));
@@ -241,7 +241,7 @@ uint8_t get_dotnet_load_assembly(const char_t *config_path, hostfxr_resource* ho
     // Load .NET Core
     void *load_assembly_and_get_function_pointer = NULL;
     hostfxr_handle cxt = NULL;
-    
+
     int rc = hostfxr->init_fptr(config_path, NULL, &cxt);
 
     if (rc != 0 || cxt == NULL)
@@ -257,7 +257,7 @@ uint8_t get_dotnet_load_assembly(const char_t *config_path, hostfxr_resource* ho
         &load_assembly_and_get_function_pointer);
 
     if (rc != 0 || load_assembly_and_get_function_pointer == NULL)
-        printf("Get delegate failed: %d", rc); 
+        printf("Get delegate failed: %d", rc);
 
     hostfxr->close_fptr(cxt);
     hostfxr->load_assembly_and_get_function_pointer = (load_assembly_and_get_function_pointer_fn)load_assembly_and_get_function_pointer;
@@ -313,7 +313,7 @@ static ERL_NIF_TERM load_hostfxr(ErlNifEnv* env, int argc, const ERL_NIF_TERM ar
     enif_release_resource(hostfxr);
     printf("Completely failed to load hostfxr \n");
     return -1;
-  } 
+  }
 
   if(!get_dotnet_load_assembly(reinterpret_cast<const char_t*>(runtimeconfig.data), hostfxr)) {
     enif_release_resource(hostfxr);
@@ -370,7 +370,7 @@ static ERL_NIF_TERM run_app_from_assembly(ErlNifEnv* env, int argc, const ERL_NI
   if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
   if(!enif_inspect_binary(env, argv[1], &assemblyName)) { return param_error(env, "assemblyName"); }
 
-  const char* actual_data = (context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
+  //const char* actual_data = (context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
 
   ERL_NIF_TERM result = context->run_app_from_assembly(env, context->gchandle,reinterpret_cast<const char_t*>(assemblyName.data));
 
@@ -406,7 +406,10 @@ static ERL_NIF_TERM process_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM ar
   if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
   if(!enif_get_resource(env, argv[1], globals->pointer_resource, (void**)&fn_ptr)) { return param_error(env, "fn_ptr"); }
 
-  return context->process_init(env, context->gchandle, fn_ptr->data);
+  printf("About to perform process init\r\n");
+  auto result = context->process_init(env, context->gchandle, fn_ptr->data);
+  printf("Process init done with result %lu\r\n", result);
+  return enif_make_copy(env, result);
 }
 
 static ERL_NIF_TERM process_msg(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {

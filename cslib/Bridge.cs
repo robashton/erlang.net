@@ -28,7 +28,7 @@ namespace CsLib
     private Bridge(Runtime runtime) {
       this.runtime = runtime;
     }
-    
+
     unsafe public static int Create(IntPtr ptr, int argLength) {
       CreateArgs* args = (CreateArgs*)ptr;
 
@@ -45,13 +45,19 @@ namespace CsLib
 
       return 0;
     }
-    
+
     static int LoadAssemblyWrapper(IntPtr env, IntPtr bridge, IntPtr assemblyName) {
-      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName));
+      Console.WriteLine("In LoadAssemblyWrapper");
+      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName));
+      Console.WriteLine("Done With LoadAssemblyWrapper");
+      return res;
     }
 
     static int ProcessInitWrapper(IntPtr env, IntPtr bridge, IntPtr fn) {
-      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessInit(env, fn);
+      Console.WriteLine("In ProcessInitWrapper");
+      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessInit(env, fn);
+      Console.WriteLine("Done With ProcessInitWrapper");
+      return res;
     }
 
     static int ProcessMsgWrapper(IntPtr env, IntPtr bridge, int fn, int msg) {
@@ -63,24 +69,26 @@ namespace CsLib
     }
 
     public static int Return(IntPtr hptr) {
-      GCHandle.FromIntPtr(hptr).Free(); 
-      return 0; 
+      GCHandle.FromIntPtr(hptr).Free();
+      return 0;
     }
 
     // NOTE: A big-ass todo here, ProcessInit is currently passed to C via 'spawn'
-    // and the C is responsible for turning the void* into a resource to go to erlang 
+    // and the C is responsible for turning the void* into a resource to go to erlang
     // and then mirroring that on the return
     // All the other process callbacks have the C# create the resource and unmap it
     // but the code is presently assymetrical so that needs sorting too
-    public int ProcessInit(IntPtr env, IntPtr fn) 
+    public int ProcessInit(IntPtr env, IntPtr fn)
     {
       this.runtime.SetEnv(env);
       ProcessInit callback = Marshal.GetDelegateForFunctionPointer<ProcessInit>(fn);
+      Console.WriteLine("Creating new process context");
       ITerm term = callback(new ProcessContext(this.runtime));
+      Console.WriteLine("Created new process context");
       return term.Handle();
     }
 
-    public int ProcessMsg(IntPtr env, int fn, int msg) 
+    public int ProcessMsg(IntPtr env, int fn, int msg)
     {
       this.runtime.SetEnv(env);
 
@@ -93,7 +101,7 @@ namespace CsLib
       return term.Handle();
     }
 
-    public int ProcessTimeout(IntPtr env, int fn) 
+    public int ProcessTimeout(IntPtr env, int fn)
     {
       this.runtime.SetEnv(env);
 
@@ -106,7 +114,7 @@ namespace CsLib
       return term.Handle();
     }
 
-    public int LoadAssembly(IntPtr env, String filepath) 
+    public int LoadAssembly(IntPtr env, String filepath)
     {
       this.runtime.SetEnv(env);
 
@@ -115,6 +123,7 @@ namespace CsLib
         // TODO: Ask stears what he remembers about app domains and this shit..
         AssemblyName assemblyName = AssemblyName.GetAssemblyName(filepath);
         Assembly assembly = Assembly.Load(assemblyName);
+
 
         var appType = assembly.GetExportedTypes()
           .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null);

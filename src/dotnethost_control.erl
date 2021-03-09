@@ -23,15 +23,18 @@
                , app :: term()
                }).
 get_bridge() ->
-  io:format(user, "doing a lookup  ~p~n", []),
-  { bridge, Bridge } = ets:lookup(control, bridge),
-  io:format(user, "did a lookup  ~p~n", []),
+  io:format(user, "doing a lookup~n", []),
+  [{ bridge, Bridge }] = ets:lookup(control, bridge),
+  io:format(user, "did a lookup~n", []),
   { ok, Bridge }.
 
 start_link(HostFxr) ->
+  io:format(user, "dotnethost_control start_link~n", []),
   gen_server:start_link({local, ?SERVER}, ?MODULE, [HostFxr], []).
 
 init([HostFxr]) ->
+  io:format(user, "dotnethost_control init~n", []),
+  process_flag(trap_exit, true),
   {ok, Bridge} = dotnet:create_bridge(HostFxr),
 
   ets:new(control, [set, protected, named_table]),
@@ -73,7 +76,8 @@ handle_info(Other, State = #state{ bridge = Bridge }) ->
   io:format(user, "Got a weird message from somewhere ~p~n", [Other]),
   {noreply, State}.
 
-terminate(_Reason, _State) ->
+terminate(Reason, _State) ->
+  io:format(user, "dotnethost_control terminate with reason ~p", [Reason]),
   ok.
 
 code_change(_OldVsn, State, _Extra) ->
