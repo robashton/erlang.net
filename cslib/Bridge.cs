@@ -30,6 +30,9 @@ namespace CsLib
     }
 
     unsafe public static int Create(IntPtr ptr, int argLength) {
+      Console.SetOut(new System.IO.StreamWriter(System.IO.Stream.Null));
+     // Console.SetOut(Console.Error);
+       
       CreateArgs* args = (CreateArgs*)ptr;
 
       Runtime runtime = new Runtime(args->runtime);

@@ -17,9 +17,10 @@
 
 typedef void* GCHANDLE;
 
+#define TRACE_ENABLE 1
 #ifdef TRACE_ENABLE
     #define TRACE(...) {      \
-      fprintf(__VA_ARGS__);   \
+      printf(__VA_ARGS__);   \
     }
 #else
     #define TRACE(...) {} 
