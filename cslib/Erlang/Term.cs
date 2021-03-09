@@ -1,24 +1,26 @@
 using System;
 using CsLib;
 
-namespace CsLib.Erlang 
+namespace CsLib.Erlang
 {
   public class Term : ITerm
   {
-    Int64 handle;
+    ErlNifTerm native;
     Runtime runtime;
 
-    public bool HasValue 
+    public bool HasValue
     {
-      get { return handle > 0; }
+      get { return native.HasValue; }
     }
 
-    internal Term(Runtime runtime, Int64 handle) 
+    internal Term(Runtime runtime, ErlNifTerm native)
     {
-      this.handle = handle;
+      this.native = native;
       this.runtime = runtime;
     }
-    
-    public Int64 Handle() { return this.handle; }
+
+    public ErlNifTerm Native {
+      get { return this.native; }
+    }
   }
 }

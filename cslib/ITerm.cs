@@ -5,8 +5,11 @@ namespace CsLib
 {
     public interface ITerm
     {
-      Int64 Handle();
-      bool HasValue 
+      ErlNifTerm Native {
+        get;
+      }
+
+      bool HasValue
       {
         get;
       }
