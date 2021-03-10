@@ -2,7 +2,7 @@
 
 -export([ create_bridge/1
         , load_hostfxr/0
-        , run_app_from_assembly/2
+        , run_app_from_assembly/3
         , process_init/2
         , process_msg/3
         , process_timeout/2
@@ -12,7 +12,7 @@
 -on_load(init/0).
 
 load_hostfxr() ->
-  load_hostfxr_impl(<<"priv/cslib.runtimeconfig.json", 0>>).
+  load_hostfxr_impl("priv/cslib.runtimeconfig.json").
 
 init() ->
   File = filename:join(code:priv_dir(dotnet), dotnet),
@@ -21,7 +21,7 @@ init() ->
 create_bridge(_HostFxr) ->
   erlang:nif_error("Nif not loaded").
 
-run_app_from_assembly(_Bridge, _AssemblyName) ->
+run_app_from_assembly(_Bridge, _AssemblyName, _TypeName) ->
   erlang:nif_error("Nif not loaded").
 
 callback(_Bridge, _Resource, _Result) ->

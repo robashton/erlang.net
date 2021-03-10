@@ -4,7 +4,7 @@
 
 init(Callback) ->
   spawn_link(fun() ->
-                 { ok, Bridge } = dotnethost_control:get_bridge(),
+                 { ok, Bridge } = dotnethost_bridge:get_bridge(),
                  Result = dotnet:process_init(Bridge, Callback),
                  loop(Bridge, Result)
              end).

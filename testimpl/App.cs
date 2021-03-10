@@ -16,11 +16,11 @@ namespace TestImpl
         return runtime.Spawn(WorkerLoop);
       }
 
-      ITerm WorkerLoop(ProcessContext ctx) {
+      ProcessResult WorkerLoop(ProcessContext ctx) {
         return ctx.Receive(5000, WorkerLoopReceive);
       }
 
-      ITerm WorkerLoopReceive(ProcessContext ctx, ITerm msg)
+      ProcessResult WorkerLoopReceive(ProcessContext ctx, Term msg)
       {
         if(msg != null) {
           Console.WriteLine("C# received a message, allowing process to terminate \r");

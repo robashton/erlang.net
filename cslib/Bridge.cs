@@ -3,8 +3,7 @@ using CsLib.Erlang;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Linq;
-
-
+using System.IO;
 
 namespace CsLib
 {
@@ -29,19 +28,34 @@ namespace CsLib
       this.runtime = runtime;
     }
 
+    public class PrintFWriter : StringWriter
+    {
+      Runtime runtime;
+      public PrintFWriter(Runtime runtime)
+      {
+        this.runtime = runtime;
+      }
+
+      public override void WriteLine(string value)
+      {
+        this.runtime.WriteDebug(value);
+      }
+    }
+
     unsafe public static int Create(IntPtr ptr, int argLength) {
-      Console.SetOut(new System.IO.StreamWriter(System.IO.Stream.Null));
-     // Console.SetOut(Console.Error);
-       
+
       CreateArgs* args = (CreateArgs*)ptr;
 
       Runtime runtime = new Runtime(args->runtime);
       Bridge instance = new Bridge(runtime);
 
+      // If you Console.WriteLine before this, you'll break the erlang shell
+      Console.SetOut(new PrintFWriter(runtime));
+
       var handle = GCHandle.Alloc(instance);
       args->handle = GCHandle.ToIntPtr(handle);
       args->@return = (IntPtr)(delegate* <IntPtr, ErlNifTerm>) &Return;
-      args->load_assembly = (IntPtr)(delegate*<ErlNifEnv, IntPtr, IntPtr, ErlNifTerm>)&LoadAssemblyWrapper;
+      args->load_assembly = (IntPtr)(delegate*<ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm>)&LoadAssemblyWrapper;
       args->process_init = (IntPtr)(delegate*<ErlNifEnv, IntPtr, IntPtr, ErlNifTerm>)&ProcessInitWrapper;
       args->process_msg = (IntPtr)(delegate*<ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm>)&ProcessMsgWrapper;
       args->process_timeout = (IntPtr)(delegate*<ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm>)&ProcessTimeoutWrapper;
@@ -49,17 +63,13 @@ namespace CsLib
       return 0;
     }
 
-    static ErlNifTerm LoadAssemblyWrapper(ErlNifEnv env, IntPtr bridge, IntPtr assemblyName) {
-      Console.WriteLine("In LoadAssemblyWrapper");
-      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName));
-      Console.WriteLine("Done With LoadAssemblyWrapper");
+    static ErlNifTerm LoadAssemblyWrapper(ErlNifEnv env, IntPtr bridge, IntPtr assemblyName, IntPtr typeName) {
+      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName), Marshal.PtrToStringAuto(typeName));
       return res;
     }
 
     static ErlNifTerm ProcessInitWrapper(ErlNifEnv env, IntPtr bridge, IntPtr fn) {
-      Console.WriteLine("In ProcessInitWrapper");
       var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessInit(env, fn);
-      Console.WriteLine("Done With ProcessInitWrapper");
       return res;
     }
 
@@ -85,10 +95,7 @@ namespace CsLib
     {
       this.runtime.SetEnv(env);
       ProcessInit callback = Marshal.GetDelegateForFunctionPointer<ProcessInit>(fn);
-      Console.WriteLine("Creating new process context");
       ITerm term = callback(new ProcessContext(this.runtime));
-      Console.WriteLine("Created new process context");
-
       return term.Native;
     }
 
@@ -118,7 +125,7 @@ namespace CsLib
       return term.Native;
     }
 
-    public ErlNifTerm LoadAssembly(ErlNifEnv env, String filepath)
+    public ErlNifTerm LoadAssembly(ErlNifEnv env, String filepath, String typeName)
     {
       this.runtime.SetEnv(env);
 
@@ -130,7 +137,11 @@ namespace CsLib
 
 
         var appType = assembly.GetExportedTypes()
-          .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null);
+          .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null && t.FullName == typeName);
+
+        if (appType == null) {
+          return this.runtime.MakeAtom("enoent").Native;
+        }
 
         var ctor = appType.GetConstructor(Type.EmptyTypes);
 

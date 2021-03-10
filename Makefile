@@ -36,7 +36,7 @@ cslib/bin/$(CONFIGURATION)/net5.0/cslib.runtimeconfig.json: cslib/bin/$(CONFIGUR
 cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll: cslib/*.cs cslib/*/*.cs cslib/cslib.csproj
 	cd cslib && dotnet build
 
-testimpl/bin/$(CONFIGURATION)/net5.0/testimpl.dll: testimpl/*.cs testimpl/testimpl.csproj
+testimpl/bin/$(CONFIGURATION)/net5.0/testimpl.dll: testimpl/*.cs testimpl/*/*.cs testimpl/testimpl.csproj
 	cd testimpl && dotnet build
 
 nifs: $(addprefix priv/, $(addsuffix .so, $(NIFS)))

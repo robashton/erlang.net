@@ -22,5 +22,11 @@ namespace CsLib.Erlang
     public ErlNifTerm Native {
       get { return this.native; }
     }
+
+    public T As<T>() 
+    {
+      return this.runtime.Coerce<T>(this.native);
+    }
+
   }
 }

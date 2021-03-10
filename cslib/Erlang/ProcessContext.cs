@@ -12,7 +12,7 @@ namespace CsLib.Erlang
       this.runtime = runtime;
     }
 
-    public ITerm Receive(ProcessMsg callback) {
+    public ProcessResult Receive(ProcessMsg callback) {
       IntPtr ptr = Marshal.GetFunctionPointerForDelegate(callback);
       ITerm ptrResource = this.runtime.MakePointerResource(ptr);
       var tuple = this.runtime.MakeTuple2(
@@ -21,7 +21,7 @@ namespace CsLib.Erlang
       return new ProcessResult(this.runtime, tuple.Native);
     }
 
-    public ITerm Receive(int timeout, ProcessMsg callback) {
+    public ProcessResult Receive(int timeout, ProcessMsg callback) {
       IntPtr ptr = Marshal.GetFunctionPointerForDelegate(callback);
       ITerm ptrResource = this.runtime.MakePointerResource(ptr);
       var tuple = this.runtime.MakeTuple3(

@@ -13,7 +13,7 @@ start_link(HostFxr) ->
 
 init([HostFxr]) ->
   {ok, { #{ strategy => one_for_one  }, [
-                                         #{ id => dotnethost_control
+                                         #{ id => dotnethost_bridge
                                             , start => { dotnethost_control, start_link, [HostFxr] }
                                             , type => worker
                                           }
