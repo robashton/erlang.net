@@ -7,6 +7,11 @@ using System.Linq;
 
 namespace CsLib.Erlang
 {
+  internal static class Imports {
+
+    [DllImport("erldotnet")]
+    internal static extern ErlNifTerm erldotnet_make_atom(ErlNifEnv env, IntPtr str);
+  }
 
   [StructLayout(LayoutKind.Sequential)]
   public struct RuntimeImpl
@@ -94,7 +99,7 @@ namespace CsLib.Erlang
 
     public Atom MakeAtom(String str) {
       IntPtr strPtr = (IntPtr)Marshal.StringToHGlobalAnsi(str);
-      var result = this.makeAtom(Env(), strPtr);
+      var result = Imports.erldotnet_make_atom(Env(), strPtr);
       Marshal.FreeHGlobal(strPtr);
       return new Atom(this, result);
     }
@@ -151,7 +156,7 @@ namespace CsLib.Erlang
         return new Term(this, term);
       }
 
-      var tupleTypes = new Type[] 
+      var tupleTypes = new Type[]
       { typeof(Tuple<,>),
         typeof(Tuple<,,>),
         typeof(Tuple<,,,>),
@@ -209,7 +214,7 @@ namespace CsLib.Erlang
         String str = Marshal.PtrToStringAnsi(ptr);
         Marshal.FreeHGlobal(ptr);
         return str;
-      } 
+      }
       return String.Empty;
     }
   }

@@ -15,7 +15,7 @@ load_hostfxr() ->
   load_hostfxr_impl("priv/cslib.runtimeconfig.json").
 
 init() ->
-  File = filename:join(code:priv_dir(dotnet), dotnet),
+  File = filename:join(code:priv_dir(dotnet), liberldotnet),
   ok = erlang:load_nif(File, 0).
 
 create_bridge(_HostFxr) ->

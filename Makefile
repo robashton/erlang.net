@@ -1,4 +1,4 @@
-NIFS=dotnet
+NIFS=liberldotnet
 
 erl_root_dir = $(shell erl -eval 'io:format(standard_error, "~s", [os:getenv("ROOTDIR")]), erlang:halt().' 2>&1 >/dev/null)
 
@@ -19,8 +19,8 @@ priv/:
 c_src/%.o: c_src/%.cpp | priv/
 	gcc -std=c++14 -c -I$(ERLDIR)/usr/include -I$(DOTNET_LOCATION) -o $@ $<
 
-priv/%.so: c_src/%.o 
-	gcc -o $@ $< -shared -fPIC -L $(DOTNET_LOCATION) -L$(ERLDIR)/usr/lib -lstdc++ -lnethost -lei -ldl 
+priv/liberldotnet.so: c_src/dotnet.o c_src/dotnet_exports.o
+	gcc -o $@ $^ -shared -fPIC -L $(DOTNET_LOCATION) -L$(ERLDIR)/usr/lib -lstdc++ -lnethost -lei -ldl
 
 priv/cslib.dll: cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll
 	cp $< $@
