@@ -10,7 +10,7 @@ namespace CsLib.Erlang
   internal static class Imports {
 
     [DllImport("erldotnet")]
-    internal static extern ErlNifTerm erldotnet_make_atom(ErlNifEnv env, IntPtr str);
+    internal static extern ErlNifTerm erldotnet_make_atom(ErlNifEnv env, StringBuilder str);
   }
 
   [StructLayout(LayoutKind.Sequential)]
@@ -98,9 +98,7 @@ namespace CsLib.Erlang
     }
 
     public Atom MakeAtom(String str) {
-      IntPtr strPtr = (IntPtr)Marshal.StringToHGlobalAnsi(str);
-      var result = Imports.erldotnet_make_atom(Env(), strPtr);
-      Marshal.FreeHGlobal(strPtr);
+      var result = Imports.erldotnet_make_atom(Env(), new StringBuilder(str));
       return new Atom(this, result);
     }
 
