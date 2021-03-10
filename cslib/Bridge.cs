@@ -8,15 +8,15 @@ using System.IO;
 namespace CsLib
 {
   [StructLayout(LayoutKind.Sequential)]
-  public struct CreateArgs
+  public unsafe struct CreateArgs
   {
     public IntPtr handle;
     public IntPtr runtime;
-    public IntPtr @return;
-    public IntPtr load_assembly;
-    public IntPtr process_init;
-    public IntPtr process_msg;
-    public IntPtr process_timeout;
+    public delegate* <IntPtr, ErlNifTerm> @return;
+    public delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm> load_assembly;
+    public delegate* <ErlNifEnv, IntPtr, IntPtr, ErlNifTerm> process_init;
+    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> process_msg;
+    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> process_timeout;
   }
 
   public class Bridge {
@@ -54,11 +54,11 @@ namespace CsLib
 
       var handle = GCHandle.Alloc(instance);
       args->handle = GCHandle.ToIntPtr(handle);
-      args->@return = (IntPtr)(delegate* <IntPtr, ErlNifTerm>) &Return;
-      args->load_assembly = (IntPtr)(delegate*<ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm>)&LoadAssemblyWrapper;
-      args->process_init = (IntPtr)(delegate*<ErlNifEnv, IntPtr, IntPtr, ErlNifTerm>)&ProcessInitWrapper;
-      args->process_msg = (IntPtr)(delegate*<ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm>)&ProcessMsgWrapper;
-      args->process_timeout = (IntPtr)(delegate*<ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm>)&ProcessTimeoutWrapper;
+      args->@return = &Return;
+      args->load_assembly = &LoadAssemblyWrapper;
+      args->process_init = &ProcessInitWrapper;
+      args->process_msg = &ProcessMsgWrapper;
+      args->process_timeout = &ProcessTimeoutWrapper;
 
       return 0;
     }
