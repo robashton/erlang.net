@@ -8,12 +8,13 @@
 #include <iostream>
 #include <unistd.h>
 
-
 #include <nethost.h>
 
 #include "coreclr_delegates.h"
 #include "hostfxr.h"
 #include "guff.h"
+#include "types.h"
+#include "utils.h"
 
 typedef void* GCHANDLE;
 
@@ -25,25 +26,6 @@ typedef void* GCHANDLE;
 #else
     #define TRACE(...) {}
 #endif
-
-
-typedef struct nif_globals_ {
-  ErlNifResourceType *fn;
-  ErlNifResourceType *hostfxr_resource;
-  ErlNifResourceType *bridge_resource;
-  ErlNifResourceType *callback_resource;
-  ErlNifResourceType *pointer_resource;
-  ErlNifPid owner;
-} nif_globals;
-
-typedef struct callback_resource_ {
-  uint8_t complete;
-  ERL_NIF_TERM result;
-} callback_resource;
-
-typedef struct pointer_resource_ {
-  void* data;
-} pointer_resource;
 
 // these are callbacks we'll give to C# to invoke to get stuff out of us
 // All of these callbacks (when we dig back through the callstack)
@@ -67,24 +49,6 @@ typedef int (*tuple_length_fn)(ErlNifEnv* env, ERL_NIF_TERM arg);
 typedef ERL_NIF_TERM (*tuple_element_fn)(ErlNifEnv* env, int index, ERL_NIF_TERM arg);
 typedef int (*send_fn)(ErlNifEnv* env, ERL_NIF_TERM pid, ERL_NIF_TERM arg);
 
-typedef struct erlang_runtime_ {
-  spawn_fn spawn;
-  write_debug_fn write_debug;
-  make_atom_fn make_atom;
-  make_int_fn make_int;
-  make_tuple2_fn make_tuple2;
-  make_tuple3_fn make_tuple3;
-  make_pointer_resource_fn make_pointer_resource;
-  unpack_pointer_resource_fn unpack_pointer_resource;
-  release_pointer_resource_fn release_pointer_resource;
-  string_or_atom_length_fn string_or_atom_length;
-  term_to_string_fn term_to_string;
-  is_pid_fn is_pid;
-  tuple_length_fn tuple_length;
-  tuple_element_fn tuple_element;
-  send_fn send;
-} erlang_runtime;
-
 // Callbacks that C# will give us by populating the struct
 typedef void (*return_gchandle_fn)(GCHANDLE handle);
 typedef ERL_NIF_TERM (*run_app_from_assembly_fn)(ErlNifEnv* env, GCHANDLE handle, const char_t* assemblyName, const char_t* typeName);
@@ -94,7 +58,6 @@ typedef ERL_NIF_TERM (*process_timeout_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_
 
 typedef struct bridge_context_ {
   void* gchandle;
-  erlang_runtime* runtime;
   return_gchandle_fn return_gchandle;
   run_app_from_assembly_fn run_app_from_assembly;
   process_init_fn process_init;
@@ -128,194 +91,11 @@ static void bridge_resource_destroy(ErlNifEnv *env, void *obj)
     context->return_gchandle(context->gchandle);
     context->gchandle = NULL;
   }
-
-  if(context->runtime) {
-    free(context->runtime);
-    context->runtime = NULL;
-  }
 }
 
 static void callback_resource_destroy(ErlNifEnv *env, void *obj)
 {
   callback_resource *resource = (callback_resource*) obj;
-}
-
-
-static ERL_NIF_TERM call_erlang_fn(ErlNifEnv* env, ERL_NIF_TERM mfa) {
-  nif_globals* globals = (nif_globals*)enif_priv_data(env);
-
-  // We'll be nice and do this as a resource so we can pass it to erlang and back to us
-  callback_resource* callback = (callback_resource*)enif_alloc_resource(globals->callback_resource, sizeof(callback_resource));
-  memset(callback, 0, sizeof(callback_resource));
-
-  // We'll not release it, cos Erlang will think it's finished with as soon as the callback is invoked
-  ERL_NIF_TERM resource = enif_make_resource(env, callback);
-
-  enif_send(env, &globals->owner, NULL, enif_make_tuple3(env,
-        enif_make_atom(env, "call_fn"),
-        mfa,
-        resource)
-      );
-
-  // cheeky spin-wait on this being written in the nif:callback
-  while(!callback->complete) {
-    sleep(1);
-  }
-
-  // TODO: This probably needs copying into our env?
-  // as it originally came from our 'dotnethost_control' process
-  ERL_NIF_TERM result = callback->result;
-
-  // Now we can clear that resource up
-  enif_release_resource(callback);
-
-  // Finally, send this back to C# (lol)
-  return result;
-
-}
-
-
-static ERL_NIF_TERM runtime_spawn(ErlNifEnv* env, void* fn) {
-  nif_globals* globals = (nif_globals*)enif_priv_data(env);
-
-  pointer_resource* ptr = (pointer_resource*)enif_alloc_resource(globals->pointer_resource, sizeof(pointer_resource));
-  ptr->data = fn;
-  ERL_NIF_TERM payload = enif_make_resource(env, ptr);
-
-  ERL_NIF_TERM result = call_erlang_fn(env,
-      enif_make_tuple3(env,
-        enif_make_atom(env, "dotnetprocess"),
-        enif_make_atom(env, "init"),
-          enif_make_list1(env, payload)));
-
-  enif_release_resource(ptr);
-
-  return result;
-}
-
-static ERL_NIF_TERM runtime_write_debug(ErlNifEnv* env, const char_t* data) {
-  printf("%s \r\n", data);
-  return enif_make_atom(env, "ok");
-}
-
-static ERL_NIF_TERM runtime_make_atom(ErlNifEnv* env, const char_t* data) {
-  return enif_make_atom(env, data);
-}
-
-static ERL_NIF_TERM runtime_make_int(ErlNifEnv* env, int32_t value) {
-  return enif_make_int(env, value);
-}
-
-static ERL_NIF_TERM runtime_make_tuple2(ErlNifEnv* env, ERL_NIF_TERM a, ERL_NIF_TERM b) {
-  return enif_make_tuple2(env, a, b);
-}
-
-static ERL_NIF_TERM runtime_make_tuple3(ErlNifEnv* env, ERL_NIF_TERM a, ERL_NIF_TERM b, ERL_NIF_TERM c) {
-  return enif_make_tuple3(env, a, b, c);
-}
-
-static ERL_NIF_TERM runtime_make_pointer_resource(ErlNifEnv* env, void* ptr) {
-  nif_globals* globals = (nif_globals*)enif_priv_data(env);
-  pointer_resource* wrapper = (pointer_resource*)enif_alloc_resource(globals->pointer_resource, sizeof(pointer_resource));
-  wrapper->data = ptr;
-  return enif_make_resource(env, wrapper);
-}
-
-static void* runtime_unpack_pointer_resource(ErlNifEnv* env, ERL_NIF_TERM resource) {
-  nif_globals* globals = (nif_globals*)enif_priv_data(env);
-  pointer_resource* ptr;
-
-  if(enif_get_resource(env, resource, globals->pointer_resource, (void**)&ptr)) {
-    return ptr->data;
-  }
-  return NULL;
-}
-
-static ERL_NIF_TERM runtime_release_pointer_resource(ErlNifEnv* env, ERL_NIF_TERM resource) {
-  nif_globals* globals = (nif_globals*)enif_priv_data(env);
-  pointer_resource* ptr;
-
-  if(enif_get_resource(env, resource, globals->pointer_resource, (void**)&ptr)) {
-    enif_release_resource(ptr->data);
-    ptr->data = NULL;
-  }
-  return enif_make_atom(env, "ok");
-}
-
-static int runtime_string_or_atom_length(ErlNifEnv* env, ERL_NIF_TERM term) {
-  nif_globals* globals = (nif_globals*)enif_priv_data(env);
-  pointer_resource* ptr;
-
-  if(enif_is_atom(env, term)) {
-    unsigned int len;
-    enif_get_atom_length(env,term, &len, ERL_NIF_LATIN1);
-    return len;
-  }
-  return -1;
-}
-
-
-static int runtime_term_to_string(ErlNifEnv* env, char_t* buffer, unsigned int buffer_len, ERL_NIF_TERM term) {
-  if(enif_is_atom(env, term)) {
-    int result = enif_get_atom(env, term, buffer, buffer_len, ERL_NIF_LATIN1);
-  }
-  return -1;
-}
-
-static uint8_t runtime_is_pid(ErlNifEnv* env,  ERL_NIF_TERM term) {
-  return enif_is_pid(env, term) == 1;
-}
-
-static int runtime_tuple_length(ErlNifEnv* env,  ERL_NIF_TERM term) {
-  int arity;
-  const ERL_NIF_TERM* array;
-  if(enif_get_tuple(env, term, &arity, &array)) {
-    return arity;
-  }
-  else {
-    return -1;
-  };
-}
-
-static ERL_NIF_TERM runtime_tuple_element(ErlNifEnv* env, int index, ERL_NIF_TERM term) {
-  int arity;
-  const ERL_NIF_TERM* array;
-  if(enif_get_tuple(env, term, &arity, &array)) {
-    if(arity > index) {
-      return array[index];
-    }
-  }
-  return 0;
-}
-
-static int runtime_send(ErlNifEnv* env, ERL_NIF_TERM maybePid, ERL_NIF_TERM term) {
-  ErlNifPid pid;
-  if(enif_get_local_pid(env, maybePid, &pid)) {
-    enif_send(env, &pid, NULL, term);
-    return 1;
-  }
-  return -1;
-}
-
-static erlang_runtime* create_runtime(ErlNifEnv* env) {
-  erlang_runtime* runtime = (erlang_runtime*)calloc(1, sizeof(erlang_runtime));
-
-  runtime->spawn = &runtime_spawn;
-  runtime->write_debug = &runtime_write_debug;
-  runtime->make_atom = &runtime_make_atom;
-  runtime->make_int = &runtime_make_int;
-  runtime->make_tuple2 = &runtime_make_tuple2;
-  runtime->make_tuple3 = &runtime_make_tuple3;
-  runtime->make_pointer_resource = &runtime_make_pointer_resource;
-  runtime->unpack_pointer_resource = &runtime_unpack_pointer_resource;
-  runtime->release_pointer_resource = &runtime_release_pointer_resource;
-  runtime->string_or_atom_length = &runtime_string_or_atom_length;
-  runtime->term_to_string = &runtime_term_to_string;
-  runtime->is_pid = &runtime_is_pid;
-  runtime->tuple_length = &runtime_tuple_length;
-  runtime->tuple_element = &runtime_tuple_element;
-  runtime->send = &runtime_send;
-  return runtime;
 }
 
 uint8_t get_dotnet_load_assembly(const char_t *config_path, hostfxr_resource* hostfxr)
@@ -427,8 +207,6 @@ static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM a
   bridge_context* context = (bridge_context*)enif_alloc_resource(globals->bridge_resource, sizeof(bridge_context));
   memset(context, 0, sizeof(bridge_context));
 
-  context->runtime = create_runtime(env);
-
   int result = fn(context, sizeof(bridge_context*));
 
   if(result) {
@@ -453,7 +231,7 @@ static ERL_NIF_TERM run_app_from_assembly(ErlNifEnv* env, int argc, const ERL_NI
   if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
   if(!enif_get_string(env, argv[1], assemblyName, MAX_PATH, ERL_NIF_LATIN1)) { return param_error(env, "assemblyName"); }
   if(!enif_get_string(env, argv[2], typeName, MAX_PATH, ERL_NIF_LATIN1)) { return param_error(env, "typeName"); }
-  
+
   ERL_NIF_TERM result = context->run_app_from_assembly(env, context->gchandle, assemblyName, typeName);
 
   if(result) {

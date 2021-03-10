@@ -19,7 +19,7 @@ priv/:
 c_src/%.o: c_src/%.cpp | priv/
 	gcc -std=c++14 -c -I$(ERLDIR)/usr/include -I$(DOTNET_LOCATION) -o $@ $<
 
-priv/liberldotnet.so: c_src/dotnet.o c_src/dotnet_exports.o
+priv/liberldotnet.so: c_src/dotnet.o c_src/dotnet_exports.o c_src/utils.o
 	gcc -o $@ $^ -shared -fPIC -L $(DOTNET_LOCATION) -L$(ERLDIR)/usr/lib -lstdc++ -lnethost -lei -ldl
 
 priv/cslib.dll: cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll

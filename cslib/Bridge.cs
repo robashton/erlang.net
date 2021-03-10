@@ -11,7 +11,6 @@ namespace CsLib
   public unsafe struct CreateArgs
   {
     public IntPtr handle;
-    public IntPtr runtime;
     public delegate* <IntPtr, ErlNifTerm> @return;
     public delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm> load_assembly;
     public delegate* <ErlNifEnv, IntPtr, IntPtr, ErlNifTerm> process_init;
@@ -46,7 +45,7 @@ namespace CsLib
 
       CreateArgs* args = (CreateArgs*)ptr;
 
-      Runtime runtime = new Runtime(args->runtime);
+      Runtime runtime = new Runtime();
       Bridge instance = new Bridge(runtime);
 
       // If you Console.WriteLine before this, you'll break the erlang shell
