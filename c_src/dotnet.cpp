@@ -30,7 +30,7 @@ typedef void* GCHANDLE;
 // Callbacks that C# will give us by populating the struct
 typedef void (*return_gchandle_fn)(GCHANDLE handle);
 typedef ERL_NIF_TERM (*run_app_from_assembly_fn)(ErlNifEnv* env, GCHANDLE handle, const char_t* assemblyName, const char_t* typeName);
-typedef ERL_NIF_TERM (*process_init_fn)(ErlNifEnv* env, GCHANDLE handle, void* fn);
+typedef ERL_NIF_TERM (*process_init_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn);
 typedef ERL_NIF_TERM (*process_msg_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn, ERL_NIF_TERM msg);
 typedef ERL_NIF_TERM (*process_timeout_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn);
 
@@ -239,12 +239,10 @@ static ERL_NIF_TERM callback(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
 static ERL_NIF_TERM process_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   nif_globals* globals = (nif_globals*)(enif_priv_data(env));
   bridge_context* context;
-  pointer_resource* fn_ptr;
 
   if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
-  if(!enif_get_resource(env, argv[1], globals->pointer_resource, (void**)&fn_ptr)) { return param_error(env, "fn_ptr"); }
 
-  auto result = context->process_init(env, context->gchandle, fn_ptr->data);
+  auto result = context->process_init(env, context->gchandle, argv[1]);
 
   return result;
 }

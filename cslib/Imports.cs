@@ -10,7 +10,7 @@ namespace CsLib.Erlang
     // we can achieve the same by using tuple-building and 
     // a remote 'call'
     [DllImport("erldotnet")]
-    internal static extern ErlNifTerm erldotnet_spawn(ErlNifEnv env, IntPtr fn);
+    internal static extern ErlNifTerm erldotnet_call_erlang_fn(ErlNifEnv env, ErlNifTerm mfa);
 
     [DllImport("erldotnet")]
     internal static extern ErlNifTerm erldotnet_write_debug(ErlNifEnv env, StringBuilder value);
@@ -26,6 +26,9 @@ namespace CsLib.Erlang
 
     [DllImport("erldotnet")]
     internal static extern ErlNifTerm erldotnet_make_tuple3(ErlNifEnv env, ErlNifTerm a, ErlNifTerm b, ErlNifTerm c);
+
+    [DllImport("erldotnet")]
+    internal static extern ErlNifTerm erldotnet_make_list1(ErlNifEnv env, ErlNifTerm a);
 
     [DllImport("erldotnet")]
     internal static extern ErlNifTerm erldotnet_make_pointer_resource(ErlNifEnv env, IntPtr ptr);

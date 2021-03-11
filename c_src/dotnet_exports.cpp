@@ -10,22 +10,8 @@
 #include "types.h"
 #include "utils.h"
 
-extern "C" ERL_NIF_TERM erldotnet_spawn(ErlNifEnv* env, void* fn) {
-  nif_globals* globals = (nif_globals*)enif_priv_data(env);
-
-  pointer_resource* ptr = (pointer_resource*)enif_alloc_resource(globals->pointer_resource, sizeof(pointer_resource));
-  ptr->data = fn;
-  ERL_NIF_TERM payload = enif_make_resource(env, ptr);
-
-  ERL_NIF_TERM result = call_erlang_fn(env,
-      enif_make_tuple3(env,
-        enif_make_atom(env, "dotnetprocess"),
-        enif_make_atom(env, "init"),
-          enif_make_list1(env, payload)));
-
-  enif_release_resource(ptr);
-
-  return result;
+extern "C" ERL_NIF_TERM erldotnet_call_erlang_fn(ErlNifEnv* env, ERL_NIF_TERM mfa) {
+  return call_erlang_fn(env, mfa);
 }
 
 extern "C" ERL_NIF_TERM erldotnet_write_debug(ErlNifEnv* env, const char* data) {
@@ -47,6 +33,10 @@ extern "C" ERL_NIF_TERM erldotnet_make_tuple2(ErlNifEnv* env, ERL_NIF_TERM a, ER
 
 extern "C" ERL_NIF_TERM erldotnet_make_tuple3(ErlNifEnv* env, ERL_NIF_TERM a, ERL_NIF_TERM b, ERL_NIF_TERM c) {
   return enif_make_tuple3(env, a, b, c);
+}
+
+extern "C" ERL_NIF_TERM erldotnet_make_list1(ErlNifEnv* env, ERL_NIF_TERM a) {
+  return enif_make_list1(env, a);
 }
 
 extern "C" ERL_NIF_TERM erldotnet_make_pointer_resource(ErlNifEnv* env, void* ptr) {

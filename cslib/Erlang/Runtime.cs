@@ -29,7 +29,10 @@ namespace CsLib.Erlang
     public ErlNifTerm Spawn(ProcessInit fn)
     {
       IntPtr ptr = Marshal.GetFunctionPointerForDelegate(fn);
-      return Imports.erldotnet_spawn(Env(), ptr);
+      return Imports.erldotnet_call_erlang_fn(Env(), 
+          MakeTuple3(MakeAtom("dotnetprocess"),
+                 MakeAtom("init"),
+                 MakeList(MakePointerResource(ptr))));
     }
 
     public ErlNifTerm WriteDebug(String value) {
@@ -50,6 +53,10 @@ namespace CsLib.Erlang
 
     public ErlNifTerm MakeTuple3(ErlNifTerm a, ErlNifTerm b, ErlNifTerm c) {
       return Imports.erldotnet_make_tuple3(Env(), a, b, c);
+    }
+
+    public ErlNifTerm MakeList(ErlNifTerm a) {
+      return Imports.erldotnet_make_list1(Env(), a);
     }
 
     public ErlNifTerm MakePointerResource(IntPtr ptr) {
