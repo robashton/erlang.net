@@ -9,7 +9,7 @@ using CsLib;
 namespace CsLib.Erlang
 {
   public delegate ProcessResult ProcessInit(ProcessContext ctx);
-  public delegate ProcessResult ProcessMsg(ProcessContext ctx, Term msg);
+  public delegate ProcessResult ProcessMsg(ProcessContext ctx, ErlNifTerm msg);
 
   public unsafe sealed class Runtime
   {
@@ -26,54 +26,46 @@ namespace CsLib.Erlang
     internal Runtime() {
     }
 
-    public Pid Spawn(ProcessInit fn)
+    public ErlNifTerm Spawn(ProcessInit fn)
     {
       IntPtr ptr = Marshal.GetFunctionPointerForDelegate(fn);
-      var result = Imports.erldotnet_spawn(Env(), ptr);
-      return new Pid(this, result);
+      return Imports.erldotnet_spawn(Env(), ptr);
     }
 
-    public Term WriteDebug(String value) {
-      var result = Imports.erldotnet_write_debug(Env(), new StringBuilder(value));
-      return new Term(this, result);
+    public ErlNifTerm WriteDebug(String value) {
+      return Imports.erldotnet_write_debug(Env(), new StringBuilder(value));
     }
 
-    public Atom MakeAtom(String value) {
-      var result = Imports.erldotnet_make_atom(Env(), new StringBuilder(value));
-      return new Atom(this, result);
+    public ErlNifTerm MakeAtom(String value) {
+      return Imports.erldotnet_make_atom(Env(), new StringBuilder(value));
     }
 
-    public Int MakeInt(Int32 value) {
-      var result = Imports.erldotnet_make_int(Env(), value);
-      return new Int(this, result);
+    public ErlNifTerm MakeInt(Int32 value) {
+      return Imports.erldotnet_make_int(Env(), value);
     }
 
-    public Tuple MakeTuple2(ITerm a, ITerm b) {
-      var result = Imports.erldotnet_make_tuple2(Env(), a.Native, b.Native);
-      return new Tuple(this, result);
+    public ErlNifTerm MakeTuple2(ErlNifTerm a, ErlNifTerm b) {
+      return Imports.erldotnet_make_tuple2(Env(), a, b);
     }
 
-    public Tuple MakeTuple3(ITerm a, ITerm b, ITerm c) {
-      var result = Imports.erldotnet_make_tuple3(Env(), a.Native, b.Native, c.Native);
-      return new Tuple(this, result);
+    public ErlNifTerm MakeTuple3(ErlNifTerm a, ErlNifTerm b, ErlNifTerm c) {
+      return Imports.erldotnet_make_tuple3(Env(), a, b, c);
     }
 
-    public PointerResource MakePointerResource(IntPtr ptr) {
-      var result = Imports.erldotnet_make_pointer_resource(Env(), ptr);
-      return new PointerResource(this, result);
+    public ErlNifTerm MakePointerResource(IntPtr ptr) {
+      return Imports.erldotnet_make_pointer_resource(Env(), ptr);
     }
 
-    public IntPtr UnpackPointerResource(ITerm c) {
-      return Imports.erldotnet_unpack_pointer_resource(Env(), c.Native);
+    public IntPtr UnpackPointerResource(ErlNifTerm c) {
+      return Imports.erldotnet_unpack_pointer_resource(Env(), c);
     }
 
-    public Term ReleasePointerResource(ITerm c) {
-      var result = Imports.erldotnet_release_pointer_resource(Env(), c.Native);
-      return new Term(this, result);
+    public ErlNifTerm ReleasePointerResource(ErlNifTerm c) {
+      return Imports.erldotnet_release_pointer_resource(Env(), c);
     }
 
-    public void Send(Pid target, Term term) {
-      Imports.erldotnet_send(Env(), target.Native, term.Native);
+    public void Send(Pid target, ErlNifTerm term) {
+      Imports.erldotnet_send(Env(), target, term);
     }
 
     public T Coerce<T>(ErlNifTerm term) {
@@ -83,16 +75,68 @@ namespace CsLib.Erlang
       }
       return (T)result;
     }
+    
+    public object ExtractAuto(ErlNifTerm term) {
+      Type t = DeriveType(term);
+      return Coerce(term, t);
+    }
 
+    public Type DeriveType(ErlNifTerm term)  {
+      if(Imports.erldotnet_is_tuple(Env(), term)) {
+        var length = Imports.erldotnet_tuple_length(Env(), term);
+        var typeArguments = Enumerable.Range(0, length)
+          .Select(i =>  DeriveType(Imports.erldotnet_tuple_element(Env(), i, term)))
+          .ToArray();
+
+        var method =  typeof(System.Tuple).GetMethods()
+                         .FirstOrDefault(method => method.Name == "Create" && method.GetParameters().Length == typeArguments.Length)
+                         .MakeGenericMethod(typeArguments);
+
+        return method.ReturnType;
+      }
+
+      // TF this is only an elaborate April Fools
+      // and I don't have to actually support this code in any way
+      if(Imports.erldotnet_is_atom(Env(), term)) {
+        return typeof(Atom);
+      }
+      if(Imports.erldotnet_is_double(Env(), term)) {
+        return typeof(double);
+      }
+      if(Imports.erldotnet_is_number(Env(), term)) {
+        if(Imports.erldotnet_is_int32(Env(), term)) {
+          return typeof(Int32);
+        }
+        if(Imports.erldotnet_is_int64(Env(), term)) {
+          return typeof(Int64);
+        }
+        return typeof(ErlNifTerm);
+      }
+      if(Imports.erldotnet_is_pid(Env(), term)) {
+        return typeof(Pid);
+      }
+      if(Imports.erldotnet_is_string(Env(), term)) {
+        return typeof(String);
+      }
+      if(Imports.erldotnet_is_binary(Env(), term)) {
+        return typeof(byte[]);
+      }
+      return typeof(ErlNifTerm);
+    }
+     
     public object Coerce(ErlNifTerm term, Type type) {
       if(type == typeof(String)) {
         return NativeToString(term);
       }
       if(type == typeof(Pid)) {
-        return NativeToPid(term);
+        return Imports.erldotnet_get_pid(Env(), term);
       }
-      if(type == typeof(Term)) {
-        return new Term(this, term);
+
+      if(type == typeof(Atom)) {
+        return new Atom(Coerce<String>(term));
+      }
+      if(type == typeof(ErlNifTerm)) {
+        return term;
       }
 
       var tupleTypes = new Type[]
@@ -121,13 +165,6 @@ namespace CsLib.Erlang
         }
 
         return method.Invoke(convertedArgs.ToArray());
-      }
-      return null;
-    }
-
-    public Pid NativeToPid(ErlNifTerm term) {
-      if(IsPid(term)) {
-        return new Pid(this, term);
       }
       return null;
     }

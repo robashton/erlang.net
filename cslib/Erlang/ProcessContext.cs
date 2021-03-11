@@ -14,26 +14,24 @@ namespace CsLib.Erlang
 
     public ProcessResult Receive(ProcessMsg callback) {
       IntPtr ptr = Marshal.GetFunctionPointerForDelegate(callback);
-      ITerm ptrResource = this.runtime.MakePointerResource(ptr);
       var tuple = this.runtime.MakeTuple2(
                     this.runtime.MakeAtom("receive"),
-                    ptrResource);
-      return new ProcessResult(this.runtime, tuple.Native);
+                    this.runtime.MakePointerResource(ptr));
+      return new ProcessResult(this.runtime, tuple);
     }
 
     public ProcessResult Receive(int timeout, ProcessMsg callback) {
       IntPtr ptr = Marshal.GetFunctionPointerForDelegate(callback);
-      ITerm ptrResource = this.runtime.MakePointerResource(ptr);
       var tuple = this.runtime.MakeTuple3(
                     this.runtime.MakeAtom("receive"),
                     this.runtime.MakeInt(timeout),
-                    ptrResource);
-      return new ProcessResult(this.runtime, tuple.Native);
+                    this.runtime.MakePointerResource(ptr));
+      return new ProcessResult(this.runtime, tuple);
     }
 
-    public ProcessResult Finish(ITerm result) {
+    public ProcessResult Finish(ErlNifTerm result) {
       var tuple = this.runtime.MakeTuple2(this.runtime.MakeAtom("finish"), result);
-      return new ProcessResult(this.runtime, tuple.Native);
+      return new ProcessResult(this.runtime, tuple);
     }
   }
 }

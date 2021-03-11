@@ -1,11 +1,21 @@
 using System;
 using CsLib;
 
-
 namespace CsLib.Erlang
 {
-  public sealed class Pid : Term
+  public readonly struct Pid
   {
-    internal Pid(Runtime runtime, ErlNifTerm native) : base(runtime, native) {}
+    public static readonly Pid Zero = new Pid(IntPtr.Zero);
+
+    internal readonly IntPtr inner;
+
+    internal Pid(IntPtr inner) {
+      this.inner = inner;
+    }
+
+    public bool HasValue
+    {
+      get { return this.inner != IntPtr.Zero; }
+    }
   }
 }

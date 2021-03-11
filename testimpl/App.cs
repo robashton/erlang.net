@@ -10,7 +10,7 @@ namespace TestImpl
 
       public int WaitCount { get; set; }
 
-      public ITerm Start(Runtime runtime)
+      public ErlNifTerm Start(Runtime runtime)
       {
         this.runtime = runtime;
         return runtime.Spawn(WorkerLoop);
@@ -20,9 +20,9 @@ namespace TestImpl
         return ctx.Receive(5000, WorkerLoopReceive);
       }
 
-      ProcessResult WorkerLoopReceive(ProcessContext ctx, Term msg)
+      ProcessResult WorkerLoopReceive(ProcessContext ctx, ErlNifTerm msg)
       {
-        if(msg != null) {
+        if(msg.HasValue) {
           Console.WriteLine("C# received a message, allowing process to terminate \r");
           return ctx.Finish(this.runtime.MakeAtom("ok"));
         } else {

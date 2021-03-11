@@ -27,28 +27,6 @@ typedef void* GCHANDLE;
     #define TRACE(...) {}
 #endif
 
-// these are callbacks we'll give to C# to invoke to get stuff out of us
-// All of these callbacks (when we dig back through the callstack)
-// will have been invoked via C# that originally got invoked by our C
-// and that C will have an ErlNifEnv that is valid for the duration of that call
-// So we'll thread it through rather than the alternative which would be to create
-// a Process Independent Env and (presumably) constantly copy stuff about
-typedef ERL_NIF_TERM (*spawn_fn)(ErlNifEnv* env, void* fn);
-typedef ERL_NIF_TERM (*write_debug_fn)(ErlNifEnv* env, const char_t* input);
-typedef ERL_NIF_TERM (*make_atom_fn)(ErlNifEnv* env, const char_t* input);
-typedef ERL_NIF_TERM (*make_int_fn)(ErlNifEnv* env, int32_t value);
-typedef ERL_NIF_TERM (*make_tuple2_fn)(ErlNifEnv* env, ERL_NIF_TERM a, ERL_NIF_TERM b);
-typedef ERL_NIF_TERM (*make_tuple3_fn)(ErlNifEnv* env, ERL_NIF_TERM a, ERL_NIF_TERM b, ERL_NIF_TERM c);
-typedef ERL_NIF_TERM (*make_pointer_resource_fn)(ErlNifEnv* env, void* ptr);
-typedef void* (*unpack_pointer_resource_fn)(ErlNifEnv* env, ERL_NIF_TERM arg);
-typedef ERL_NIF_TERM (*release_pointer_resource_fn)(ErlNifEnv* env, ERL_NIF_TERM arg);
-typedef int (*string_or_atom_length_fn)(ErlNifEnv* env, ERL_NIF_TERM arg);
-typedef int (*term_to_string_fn)(ErlNifEnv* env, char_t* buffer, unsigned int buffer_len, ERL_NIF_TERM arg);
-typedef uint8_t (*is_pid_fn)(ErlNifEnv* env, ERL_NIF_TERM arg);
-typedef int (*tuple_length_fn)(ErlNifEnv* env, ERL_NIF_TERM arg);
-typedef ERL_NIF_TERM (*tuple_element_fn)(ErlNifEnv* env, int index, ERL_NIF_TERM arg);
-typedef int (*send_fn)(ErlNifEnv* env, ERL_NIF_TERM pid, ERL_NIF_TERM arg);
-
 // Callbacks that C# will give us by populating the struct
 typedef void (*return_gchandle_fn)(GCHANDLE handle);
 typedef ERL_NIF_TERM (*run_app_from_assembly_fn)(ErlNifEnv* env, GCHANDLE handle, const char_t* assemblyName, const char_t* typeName);

@@ -94,34 +94,32 @@ namespace CsLib
     {
       this.runtime.SetEnv(env);
       ProcessInit callback = Marshal.GetDelegateForFunctionPointer<ProcessInit>(fn);
-      ITerm term = callback(new ProcessContext(this.runtime));
-      return term.Native;
+      ProcessResult result = callback(new ProcessContext(this.runtime));
+      return result.Native;
     }
 
     public ErlNifTerm ProcessMsg(ErlNifEnv env, ErlNifTerm fn, ErlNifTerm msg)
     {
       this.runtime.SetEnv(env);
 
-      var fnResource = new Term(this.runtime, fn);
-      IntPtr fnPtr = this.runtime.UnpackPointerResource(fnResource);
-      this.runtime.ReleasePointerResource(fnResource);
+      IntPtr fnPtr = this.runtime.UnpackPointerResource(fn);
+      this.runtime.ReleasePointerResource(fn);
 
       ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fnPtr);
-      ITerm term = callback(new ProcessContext(this.runtime), new Term(this.runtime, msg));
-      return term.Native;
+      ProcessResult result = callback(new ProcessContext(this.runtime), msg);
+      return result.Native;
     }
 
     public ErlNifTerm ProcessTimeout(ErlNifEnv env, ErlNifTerm fn)
     {
       this.runtime.SetEnv(env);
 
-      var fnResource = new Term(this.runtime, fn);
-      IntPtr fnPtr = this.runtime.UnpackPointerResource(fnResource);
-      this.runtime.ReleasePointerResource(fnResource);
+      IntPtr fnPtr = this.runtime.UnpackPointerResource(fn);
+      this.runtime.ReleasePointerResource(fn);
 
       ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fnPtr);
-      ITerm term = callback(new ProcessContext(this.runtime), null);
-      return term.Native;
+      ProcessResult result = callback(new ProcessContext(this.runtime), ErlNifTerm.Zero);
+      return result.Native;
     }
 
     public ErlNifTerm LoadAssembly(ErlNifEnv env, String filepath, String typeName)
@@ -139,7 +137,7 @@ namespace CsLib
           .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null && t.FullName == typeName);
 
         if (appType == null) {
-          return this.runtime.MakeAtom("enoent").Native;
+          return this.runtime.MakeAtom("enoent");
         }
 
         var ctor = appType.GetConstructor(Type.EmptyTypes);
@@ -148,13 +146,13 @@ namespace CsLib
 
         var term = this.running_app.Start(this.runtime);
 
-        return term.Native;
+        return term;
       }
       // I think I just need to do this or we're going to end up with exceptions bubbling up into C
       // and we'll end up leaking shit all over the place
       catch (Exception ex) {
         Console.WriteLine("Exception in bridge: " + ex.ToString());
-        return this.runtime.MakeAtom("error").Native;
+        return this.runtime.MakeAtom("error");
       }
     }
   }
