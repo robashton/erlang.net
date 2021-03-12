@@ -14,11 +14,6 @@ namespace CsLib
     public delegate* <IntPtr, ErlNifTerm> @return;
     public delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm> load_assembly;
     public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> erlang_callback;
-    
-//    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> process_init;
-//    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> process_msg;
-//    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> process_timeout;
-//    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> genserver_init;
   }
 
   public class Bridge {
@@ -80,7 +75,7 @@ namespace CsLib
     public ErlNifTerm ErlangCallback(ErlNifEnv env, ErlNifTerm fn, ErlNifTerm args)
     {
       this.runtime.SetEnv(env);
-      ErlangCallback callback = (ErlangCallback)this.runtime.PointerResourceToDelegate(fn);
+      ErlangCallback callback = (ErlangCallback)this.runtime.GetObjectReference(fn);
       return callback(runtime, args);
     }
 

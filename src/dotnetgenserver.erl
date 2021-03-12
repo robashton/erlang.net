@@ -10,4 +10,4 @@ start_link(CallbackResource) ->
 
 init([CallbackResource]) ->
   {ok ,Bridge } = dotnethost_bridge:get_bridge(),
-  dotnet:genserver_init(Bridge, CallbackResource).
+  dotnet:erlang_callback(Bridge, CallbackResource, []).

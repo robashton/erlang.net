@@ -6,32 +6,19 @@ using System.Runtime.InteropServices;
 
 namespace CsLib.Erlang
 {
-  public delegate GenInitResult GenInit<T>(GenInitContext ctx);
-  public delegate GenInitResult GenInit(GenInitContext ctx);
+  public delegate GenInitResult GenInit<T>(GenInitContext<T> ctx);
 
-  public class GenInitContext {
+  public sealed class GenInitContext<T> {
     private Runtime runtime;
 
     internal GenInitContext(Runtime runtime) {
       this.runtime = runtime;
     }
 
-    public GenInitResult Ok(Object state) {
+    public GenInitResult Ok(T state) {
       return new GenInitResult(runtime.MakeTuple2(
             runtime.MakeAtom("ok"),
-            // interestingly, we'll need to tell erlang to invoke a destructor
-            // on something holding a GC handle
-            // or I think this will disappear
             runtime.MakeObjectReference(state))); 
-    }
-  }
-
-  public sealed class GenInitContext<T> : GenInitContext {
-    internal GenInitContext(Runtime runtime) : base(runtime) { 
-    }
-
-    public GenInitResult<T> Ok(T state) {
-      return new GenInitResult<T>(base.Ok((Object)state).Native);
     }
   }
 
@@ -57,12 +44,14 @@ namespace CsLib.Erlang
     // Hopefully we can do this without creating callbacks for every single other bloody callback
     public static ErlNifTerm StartLink<T>(Runtime runtime, GenInit<T> init) 
     {
-      return runtime.StartGenServer((ctx) => (GenInitResult)init(ctx));
+      ErlangCallback del = (Runtime runtime, ErlNifTerm obj) => {
+        var result = init(new GenInitContext<T>(runtime));
+        return result.Native;
+      };
+      var resource = runtime.MakeObjectReference(del);
+      return runtime.CallErlangFn("dotnetgenserver", "start_link", new [] { resource }); 
     }
   }
-
-
-
 
 
   public sealed class HandleInfoContext {

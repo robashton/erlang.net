@@ -30,19 +30,13 @@ typedef void* GCHANDLE;
 // Callbacks that C# will give us by populating the struct
 typedef void (*return_gchandle_fn)(GCHANDLE handle);
 typedef ERL_NIF_TERM (*run_app_from_assembly_fn)(ErlNifEnv* env, GCHANDLE handle, const char_t* assemblyName, const char_t* typeName);
-typedef ERL_NIF_TERM (*process_init_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn);
-typedef ERL_NIF_TERM (*process_msg_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn, ERL_NIF_TERM msg);
-typedef ERL_NIF_TERM (*process_timeout_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn);
-typedef ERL_NIF_TERM (*genserver_init_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn);
+typedef ERL_NIF_TERM (*erlang_callback_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn, ERL_NIF_TERM args);
 
 typedef struct bridge_context_ {
   void* gchandle;
   return_gchandle_fn return_gchandle;
   run_app_from_assembly_fn run_app_from_assembly;
-  process_init_fn process_init;
-  process_msg_fn process_msg;
-  process_timeout_fn process_timeout;
-  genserver_init_fn genserver_init;
+  erlang_callback_fn erlang_callback;
 } bridge_context;
 
 typedef struct hostfxr_resource_ {
@@ -238,46 +232,14 @@ static ERL_NIF_TERM callback(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
   return enif_make_atom(env, "ok");
 }
 
-static ERL_NIF_TERM process_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
-  nif_globals* globals = (nif_globals*)(enif_priv_data(env));
-  bridge_context* context;
-
-  if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
-
-  auto result = context->process_init(env, context->gchandle, argv[1]);
-
-  return result;
-}
-
-static ERL_NIF_TERM process_msg(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+static ERL_NIF_TERM erlang_callback(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   nif_globals* globals = (nif_globals*)(enif_priv_data(env));
   bridge_context* context;
   pointer_resource* fn_ptr;
 
   if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
 
-  return context->process_msg(env, context->gchandle, argv[1], argv[2]);
-}
-
-static ERL_NIF_TERM process_timeout(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
-  nif_globals* globals = (nif_globals*)(enif_priv_data(env));
-  bridge_context* context;
-  pointer_resource* fn_ptr;
-
-  if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
-
-  return context->process_timeout(env, context->gchandle, argv[1]);
-}
-
-static ERL_NIF_TERM genserver_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
-  nif_globals* globals = (nif_globals*)(enif_priv_data(env));
-  bridge_context* context;
-
-  if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
-
-  auto result = context->genserver_init(env, context->gchandle, argv[1]);
-
-  return result;
+  return context->erlang_callback(env, context->gchandle, argv[1], argv[2]);
 }
 
 static ErlNifFunc nif_funcs[] =
@@ -287,15 +249,7 @@ static ErlNifFunc nif_funcs[] =
   {"create_bridge", 1, create_bridge},
   {"run_app_from_assembly", 3, run_app_from_assembly, ERL_NIF_DIRTY_JOB_CPU_BOUND},
   {"callback", 3, callback},
-
-  // Process API
-  {"process_init", 2, process_init},
-  {"process_msg", 3, process_msg},
-  {"process_timeout", 2, process_timeout},
-
-
-  // Genserver API
-  {"genserver_init", 2, genserver_init}
+  {"erlang_callback", 3, erlang_callback},
 };
 
 ERL_NIF_INIT(dotnet,

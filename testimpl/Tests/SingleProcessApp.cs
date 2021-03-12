@@ -11,15 +11,15 @@ namespace TestImpl.Tests
       public ErlNifTerm Start(Runtime runtime)
       {
         this.runtime = runtime;
-        var pid = runtime.Spawn(WorkerLoop);
-        return runtime.MakeTuple2( runtime.MakeAtom("ok"), pid );
+        var pid = Process.Spawn(runtime, WorkerLoop);
+        return runtime.MakeTuple2( runtime.MakeAtom("ok"), runtime.MakePid(pid) );
       }
 
-      ProcessResult WorkerLoop(ProcessContext ctx) {
-        return ctx.Receive((ProcessContext ctx, Object msg) => WorkerLoopReceive(ctx, msg));
+      ProcessResult WorkerLoop(Process ctx) {
+        return ctx.Receive((Process ctx, Object msg) => WorkerLoopReceive(ctx, msg));
       }
 
-      ProcessResult WorkerLoopReceive(ProcessContext ctx, Object msg)
+      ProcessResult WorkerLoopReceive(Process ctx, Object msg)
       {
         switch(msg) 
         {
@@ -34,7 +34,7 @@ namespace TestImpl.Tests
             Console.WriteLine("Unexpected message received, looping");
             break;
         }
-        return ctx.Receive((ProcessContext ctx, Object msg) => WorkerLoopReceive(ctx, msg));
+        return ctx.Receive((Process ctx, Object msg) => WorkerLoopReceive(ctx, msg));
       }
     }
 }

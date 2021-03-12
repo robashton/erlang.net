@@ -47,6 +47,10 @@ extern "C" ERL_NIF_TERM erldotnet_make_list1(ErlNifEnv* env, ERL_NIF_TERM a) {
   return enif_make_list1(env, a);
 }
 
+extern "C" ERL_NIF_TERM erldotnet_make_listn(ErlNifEnv* env, uint32_t length, ERL_NIF_TERM a[]) {
+  return enif_make_list_from_array(env, a, length);
+}
+
 extern "C" ERL_NIF_TERM erldotnet_make_pid(ErlNifEnv* env, ErlNifPid value) {
   return enif_make_pid(env, &value);
 }

@@ -8,7 +8,7 @@ using CsLib;
 
 namespace CsLib.Erlang
 {
-  public delegate Object ErlangCallback(Runtime runtime, Object args);
+  public delegate ErlNifTerm ErlangCallback(Runtime runtime, ErlNifTerm args);
 
   public unsafe sealed class Runtime
   {
@@ -26,23 +26,9 @@ namespace CsLib.Erlang
 
     }
 
-    // Hopefully we'll be able to get rid of these specific
-    // implementations somehow
-    public ErlNifTerm Spawn(ErlangCallback fn)
-    {
-      var resource = this.DelegateToPointerResource(fn);
+    public ErlNifTerm CallErlangFn(String module, String fn, ErlNifTerm[] args) {
       return Imports.erldotnet_call_erlang_fn(Env(), 
-          MakeTuple3(MakeAtom("dotnetprocess"),
-                 MakeAtom("init"),
-                 MakeList(resource)));
-    }
-
-    public ErlNifTerm StartGenServer(ErlangCallback fn) {
-      var resource = this.DelegateToPointerResource(fn);
-      return Imports.erldotnet_call_erlang_fn(Env(), 
-          MakeTuple3(MakeAtom("dotnetgenserver"),
-                 MakeAtom("start_link"),
-                 MakeList(resource)));
+          MakeTuple3(MakeAtom(module), MakeAtom(fn), MakeList((uint)args.Length, args)));
     }
 
     public ErlNifTerm WriteDebug(String value) {
@@ -77,10 +63,13 @@ namespace CsLib.Erlang
       return Imports.erldotnet_make_list1(Env(), value);
     }
 
+    public ErlNifTerm MakeList(uint length, ErlNifTerm[] value) {
+      return Imports.erldotnet_make_listn(Env(), length, value);
+    }
+
     public ErlNifTerm MakePid(Pid value) {
       return Imports.erldotnet_make_pid(Env(), value);
     }
-
 
     public ErlNifTerm MakeObjectReference(Object obj) {
       var handle = GCHandle.Alloc(obj);
@@ -92,17 +81,10 @@ namespace CsLib.Erlang
 //      Imports.erldotnet_release_pointer_resource(Env(), ref);
 //    }
 
-    public ErlNifTerm DelegateToPointerResource(Delegate del) {
-      var handle = GCHandle.Alloc(del);
-      var ptr = GCHandle.ToIntPtr(handle);
-      return Imports.erldotnet_make_pointer_resource(Env(), ptr);
-    }
-
-    public Delegate PointerResourceToDelegate(ErlNifTerm c) {
+    public Object GetObjectReference(ErlNifTerm c) {
       var ptr = Imports.erldotnet_unpack_pointer_resource(Env(), c);
       var handle = GCHandle.FromIntPtr(ptr);
-      Delegate del = (Delegate)handle.Target;
-      return del;
+      return handle.Target;
     }
 
     public void Send(Pid target, ErlNifTerm term) {

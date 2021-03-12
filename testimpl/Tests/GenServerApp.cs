@@ -18,7 +18,7 @@ namespace TestImpl.Tests
       {
         this.runtime = runtime;
         var pid = GenServer.StartLink<MyGenServer>(runtime, (ctx) => ctx.Ok(new MyGenServer()));
-        return runtime.MakeTuple2( runtime.MakeAtom("ok"), pid);
+        return runtime.MakeTuple2( runtime.MakeAtom("ok"), pid );
       }
     }
 }
