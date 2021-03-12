@@ -51,6 +51,22 @@ namespace TestImpl.Tests
             this.runtime.Send(tuple.Item1, runtime.MakeTuple2( runtime.MakeInt(tuple.Item2.Item1 ), runtime.MakeString(tuple.Item2.Item2 ) ));
             break;
 
+          case Tuple<Pid, Tuple<Int32, Int32, Int32>> tuple:
+            this.runtime.Send(tuple.Item1, runtime.MakeTuple3( 
+                  runtime.MakeInt(tuple.Item2.Item1 ), 
+                  runtime.MakeInt(tuple.Item2.Item2 ),
+                  runtime.MakeInt(tuple.Item2.Item3 )
+                  ));
+            break;
+
+          case Tuple<Pid, Tuple<Int32, String, Pid>> tuple:
+            this.runtime.Send(tuple.Item1, runtime.MakeTuple3( 
+                  runtime.MakeInt(tuple.Item2.Item1 ), 
+                  runtime.MakeString(tuple.Item2.Item2 ),
+                  runtime.MakePid(tuple.Item2.Item3 )
+                  ));
+            break;
+
           default:
             Console.WriteLine("Unexpected message received in test");
             break;
