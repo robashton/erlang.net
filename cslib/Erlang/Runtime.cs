@@ -25,14 +25,25 @@ namespace CsLib.Erlang
     }
 
     internal Runtime() {
+
     }
 
+    // Hopefully we'll be able to get rid of these specific
+    // implementations somehow
     public ErlNifTerm Spawn(ProcessInit fn)
     {
       var resource = this.DelegateToPointerResource(fn);
       return Imports.erldotnet_call_erlang_fn(Env(), 
           MakeTuple3(MakeAtom("dotnetprocess"),
                  MakeAtom("init"),
+                 MakeList(resource)));
+    }
+
+    public ErlNifTerm StartGenServer(GenInit init) {
+      var resource = this.DelegateToPointerResource(fn);
+      return Imports.erldotnet_call_erlang_fn(Env(), 
+          MakeTuple3(MakeAtom("dotnetgenserver"),
+                 MakeAtom("start_link"),
                  MakeList(resource)));
     }
 
@@ -73,6 +84,16 @@ namespace CsLib.Erlang
     }
 
 
+    public ErlNifTerm MakeObjectReference(Object obj) {
+      var handle = GCHandle.Alloc(obj);
+      var ptr = GCHandle.ToIntPtr(handle);
+      return Imports.erldotnet_make_pointer_resource(Env(), ptr);
+    }
+
+    public void FreeObjectReference(ErlNifTerm ref) {
+      Imports.erldotnet_release_pointer_resource(Env(), ref);
+    }
+
     public ErlNifTerm DelegateToPointerResource(Delegate del) {
       var handle = GCHandle.Alloc(del);
       var ptr = GCHandle.ToIntPtr(handle);
@@ -83,7 +104,6 @@ namespace CsLib.Erlang
       var ptr = Imports.erldotnet_unpack_pointer_resource(Env(), c);
       var handle = GCHandle.FromIntPtr(ptr);
       Delegate del = (Delegate)handle.Target;
-      handle.Free();
       return del;
     }
 

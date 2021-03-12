@@ -16,6 +16,7 @@ namespace CsLib
     public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> process_init;
     public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> process_msg;
     public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> process_timeout;
+    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> genserver_init;
   }
 
   public class Bridge {
@@ -58,6 +59,7 @@ namespace CsLib
       args->process_init = &ProcessInitWrapper;
       args->process_msg = &ProcessMsgWrapper;
       args->process_timeout = &ProcessTimeoutWrapper;
+      args->genserver_init = &GenServerInitWrapper;
 
       return 0;
     }
@@ -78,6 +80,11 @@ namespace CsLib
 
     static ErlNifTerm ProcessTimeoutWrapper(ErlNifEnv env, IntPtr bridge, ErlNifTerm fn) {
       return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessTimeout(env, fn);
+    }
+
+    static ErlNifTerm GenServerInitWrapper(ErlNifEnv env, IntPtr bridge, ErlNifTerm fn) {
+      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).GenServerInit(env, fn);
+      return res;
     }
 
     public static ErlNifTerm Return(IntPtr hptr) {
@@ -111,6 +118,14 @@ namespace CsLib
       this.runtime.SetEnv(env);
       ProcessMsg callback = (ProcessMsg)this.runtime.PointerResourceToDelegate(fn);
       ProcessResult result = callback(new ProcessContext(this.runtime), ErlNifTerm.Zero);
+      return result.Native;
+    }
+
+    public ErlNifTerm GenServerInit(ErlNifEnv env, ErlNifTerm fn)
+    {
+      this.runtime.SetEnv(env);
+      GenInit callback = (GenInit)this.runtime.PointerResourceToDelegate(fn);
+      GenInitResult result = callback(new GenInitContext(this.runtime));
       return result.Native;
     }
 

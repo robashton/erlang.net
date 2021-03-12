@@ -33,6 +33,7 @@ typedef ERL_NIF_TERM (*run_app_from_assembly_fn)(ErlNifEnv* env, GCHANDLE handle
 typedef ERL_NIF_TERM (*process_init_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn);
 typedef ERL_NIF_TERM (*process_msg_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn, ERL_NIF_TERM msg);
 typedef ERL_NIF_TERM (*process_timeout_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn);
+typedef ERL_NIF_TERM (*genserver_init_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn);
 
 typedef struct bridge_context_ {
   void* gchandle;
@@ -41,6 +42,7 @@ typedef struct bridge_context_ {
   process_init_fn process_init;
   process_msg_fn process_msg;
   process_timeout_fn process_timeout;
+  genserver_init_fn genserver_init;
 } bridge_context;
 
 typedef struct hostfxr_resource_ {
@@ -267,6 +269,17 @@ static ERL_NIF_TERM process_timeout(ErlNifEnv* env, int argc, const ERL_NIF_TERM
   return context->process_timeout(env, context->gchandle, argv[1]);
 }
 
+static ERL_NIF_TERM genserver_init(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
+  nif_globals* globals = (nif_globals*)(enif_priv_data(env));
+  bridge_context* context;
+
+  if(!enif_get_resource(env, argv[0], globals->bridge_resource, (void**)&context)) { return param_error(env, "bridge_resource"); }
+
+  auto result = context->genserver_init(env, context->gchandle, argv[1]);
+
+  return result;
+}
+
 static ErlNifFunc nif_funcs[] =
 {
   // Core setup
@@ -278,7 +291,11 @@ static ErlNifFunc nif_funcs[] =
   // Process API
   {"process_init", 2, process_init},
   {"process_msg", 3, process_msg},
-  {"process_timeout", 2, process_timeout}
+  {"process_timeout", 2, process_timeout},
+
+
+  // Genserver API
+  {"genserver_init", 2, genserver_init}
 };
 
 ERL_NIF_INIT(dotnet,

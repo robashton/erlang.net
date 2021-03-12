@@ -27,14 +27,18 @@ run_app_from_assembly(_Bridge, _AssemblyName, _TypeName) ->
 callback(_Bridge, _Resource, _Result) ->
   erlang:nif_error("Nif not loaded").
 
-process_init(_Bridge, Cb) ->
+process_init(_Bridge, _Cb) ->
   erlang:nif_error("Nif not loaded").
 
-process_msg(_Bridge, Cb, Msg) ->
+process_msg(_Bridge, _Cb, _Msg) ->
   erlang:nif_error("Nif not loaded").
 
-process_timeout(_Bridge, Cb) ->
+process_timeout(_Bridge, _Cb) ->
+  erlang:nif_error("Nif not loaded").
+
+genserver_init(_Bridge, _Cb) ->
   erlang:nif_error("Nif not loaded").
 
 load_hostfxr_impl(_RuntimeConfig) ->
   erlang:nif_error("Nif not loaded").
+
