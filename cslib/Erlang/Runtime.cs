@@ -8,9 +8,7 @@ using CsLib;
 
 namespace CsLib.Erlang
 {
-  public delegate ProcessResult ProcessInit(ProcessContext ctx);
-  public delegate ProcessResult ProcessMsg(ProcessContext ctx, ErlNifTerm msg);
-  public delegate ProcessResult ProcessMsg<T>(ProcessContext ctx, T msg);
+  public delegate Object ErlangCallback(Runtime runtime, Object args);
 
   public unsafe sealed class Runtime
   {
@@ -30,7 +28,7 @@ namespace CsLib.Erlang
 
     // Hopefully we'll be able to get rid of these specific
     // implementations somehow
-    public ErlNifTerm Spawn(ProcessInit fn)
+    public ErlNifTerm Spawn(ErlangCallback fn)
     {
       var resource = this.DelegateToPointerResource(fn);
       return Imports.erldotnet_call_erlang_fn(Env(), 
@@ -39,7 +37,7 @@ namespace CsLib.Erlang
                  MakeList(resource)));
     }
 
-    public ErlNifTerm StartGenServer(GenInit init) {
+    public ErlNifTerm StartGenServer(ErlangCallback fn) {
       var resource = this.DelegateToPointerResource(fn);
       return Imports.erldotnet_call_erlang_fn(Env(), 
           MakeTuple3(MakeAtom("dotnetgenserver"),
@@ -90,9 +88,9 @@ namespace CsLib.Erlang
       return Imports.erldotnet_make_pointer_resource(Env(), ptr);
     }
 
-    public void FreeObjectReference(ErlNifTerm ref) {
-      Imports.erldotnet_release_pointer_resource(Env(), ref);
-    }
+//    public void FreeObjectReference(ErlNifTerm ref) {
+//      Imports.erldotnet_release_pointer_resource(Env(), ref);
+//    }
 
     public ErlNifTerm DelegateToPointerResource(Delegate del) {
       var handle = GCHandle.Alloc(del);

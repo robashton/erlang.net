@@ -13,10 +13,12 @@ namespace CsLib
     public IntPtr handle;
     public delegate* <IntPtr, ErlNifTerm> @return;
     public delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm> load_assembly;
-    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> process_init;
-    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> process_msg;
-    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> process_timeout;
-    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> genserver_init;
+    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> erlang_callback;
+    
+//    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> process_init;
+//    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> process_msg;
+//    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> process_timeout;
+//    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm> genserver_init;
   }
 
   public class Bridge {
@@ -56,11 +58,7 @@ namespace CsLib
       args->handle = GCHandle.ToIntPtr(handle);
       args->@return = &Return;
       args->load_assembly = &LoadAssemblyWrapper;
-      args->process_init = &ProcessInitWrapper;
-      args->process_msg = &ProcessMsgWrapper;
-      args->process_timeout = &ProcessTimeoutWrapper;
-      args->genserver_init = &GenServerInitWrapper;
-
+      args->erlang_callback = &ErlangCallbackWrapper;
       return 0;
     }
 
@@ -68,22 +66,9 @@ namespace CsLib
       var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName), Marshal.PtrToStringAuto(typeName));
       return res;
     }
-
-    static ErlNifTerm ProcessInitWrapper(ErlNifEnv env, IntPtr bridge, ErlNifTerm fn) {
-      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessInit(env, fn);
-      return res;
-    }
-
-    static ErlNifTerm ProcessMsgWrapper(ErlNifEnv env, IntPtr bridge, ErlNifTerm fn, ErlNifTerm msg) {
-      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessMsg(env, fn, msg);
-    }
-
-    static ErlNifTerm ProcessTimeoutWrapper(ErlNifEnv env, IntPtr bridge, ErlNifTerm fn) {
-      return ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ProcessTimeout(env, fn);
-    }
-
-    static ErlNifTerm GenServerInitWrapper(ErlNifEnv env, IntPtr bridge, ErlNifTerm fn) {
-      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).GenServerInit(env, fn);
+    
+    static ErlNifTerm ErlangCallbackWrapper(ErlNifEnv env, IntPtr bridge, ErlNifTerm fn, ErlNifTerm args) {
+      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).ErlangCallback(env, fn, args);
       return res;
     }
 
@@ -92,41 +77,11 @@ namespace CsLib
       return ErlNifTerm.Zero;
     }
 
-    // These should all perhaps be callbacks
-    // sat on ProcessContext
-    // and the pointer resource dance should
-    // be done only once by a dedicated 'this is a callback function' handler
-    // pretty sure that can just be 'callback, this is my fn, these are my args, thanks'
-    public ErlNifTerm ProcessInit(ErlNifEnv env, ErlNifTerm fn)
+    public ErlNifTerm ErlangCallback(ErlNifEnv env, ErlNifTerm fn, ErlNifTerm args)
     {
       this.runtime.SetEnv(env);
-      ProcessInit callback = (ProcessInit)this.runtime.PointerResourceToDelegate(fn);
-      ProcessResult result = callback(new ProcessContext(this.runtime));
-      return result.Native;
-    }
-
-    public ErlNifTerm ProcessMsg(ErlNifEnv env, ErlNifTerm fn, ErlNifTerm msg)
-    {
-      this.runtime.SetEnv(env);
-      ProcessMsg callback = (ProcessMsg)this.runtime.PointerResourceToDelegate(fn);
-      ProcessResult result = callback(new ProcessContext(this.runtime), msg);
-      return result.Native;
-    }
-
-    public ErlNifTerm ProcessTimeout(ErlNifEnv env, ErlNifTerm fn)
-    {
-      this.runtime.SetEnv(env);
-      ProcessMsg callback = (ProcessMsg)this.runtime.PointerResourceToDelegate(fn);
-      ProcessResult result = callback(new ProcessContext(this.runtime), ErlNifTerm.Zero);
-      return result.Native;
-    }
-
-    public ErlNifTerm GenServerInit(ErlNifEnv env, ErlNifTerm fn)
-    {
-      this.runtime.SetEnv(env);
-      GenInit callback = (GenInit)this.runtime.PointerResourceToDelegate(fn);
-      GenInitResult result = callback(new GenInitContext(this.runtime));
-      return result.Native;
+      ErlangCallback callback = (ErlangCallback)this.runtime.PointerResourceToDelegate(fn);
+      return callback(runtime, args);
     }
 
     public ErlNifTerm LoadAssembly(ErlNifEnv env, String filepath, String typeName)

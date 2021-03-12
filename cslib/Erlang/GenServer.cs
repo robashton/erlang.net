@@ -17,12 +17,12 @@ namespace CsLib.Erlang
     }
 
     public GenInitResult Ok(Object state) {
-      return runtime.MakeTuple2(
-                runtime.MakeAtom("ok"),
-                // interestingly, we'll need to tell erlang to invoke a destructor
-                // on something holding a GC handle
-                // or I think this will disappear
-                runtime.MakeObjectReference(state)); 
+      return new GenInitResult(runtime.MakeTuple2(
+            runtime.MakeAtom("ok"),
+            // interestingly, we'll need to tell erlang to invoke a destructor
+            // on something holding a GC handle
+            // or I think this will disappear
+            runtime.MakeObjectReference(state))); 
     }
   }
 
@@ -57,7 +57,7 @@ namespace CsLib.Erlang
     // Hopefully we can do this without creating callbacks for every single other bloody callback
     public static ErlNifTerm StartLink<T>(Runtime runtime, GenInit<T> init) 
     {
-      return runtime.StartGenServer((ctx) => (Object)init(ctx));
+      return runtime.StartGenServer((ctx) => (GenInitResult)init(ctx));
     }
   }
 

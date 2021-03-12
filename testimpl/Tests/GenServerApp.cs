@@ -17,8 +17,8 @@ namespace TestImpl.Tests
       public ErlNifTerm Start(Runtime runtime)
       {
         this.runtime = runtime;
-        var pid = GenServer.StartLink(runtime, (ctx) => new MyGenServer());
-        return runtime.MakeTuple2( runtime.MakeAtom("ok"), runtime.MakePid(pid));
+        var pid = GenServer.StartLink<MyGenServer>(runtime, (ctx) => ctx.Ok(new MyGenServer()));
+        return runtime.MakeTuple2( runtime.MakeAtom("ok"), pid);
       }
     }
 }
