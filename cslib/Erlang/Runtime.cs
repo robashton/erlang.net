@@ -29,11 +29,11 @@ namespace CsLib.Erlang
 
     public ErlNifTerm Spawn(ProcessInit fn)
     {
-      IntPtr ptr = Marshal.GetFunctionPointerForDelegate(fn);
+      var resource = this.DelegateToPointerResource(fn);
       return Imports.erldotnet_call_erlang_fn(Env(), 
           MakeTuple3(MakeAtom("dotnetprocess"),
                  MakeAtom("init"),
-                 MakeList(MakePointerResource(ptr))));
+                 MakeList(resource)));
     }
 
     public ErlNifTerm WriteDebug(String value) {
@@ -60,16 +60,18 @@ namespace CsLib.Erlang
       return Imports.erldotnet_make_list1(Env(), a);
     }
 
-    public ErlNifTerm MakePointerResource(IntPtr ptr) {
+    public ErlNifTerm DelegateToPointerResource(Delegate del) {
+      var handle = GCHandle.Alloc(del);
+      var ptr = GCHandle.ToIntPtr(handle);
       return Imports.erldotnet_make_pointer_resource(Env(), ptr);
     }
 
-    public IntPtr UnpackPointerResource(ErlNifTerm c) {
-      return Imports.erldotnet_unpack_pointer_resource(Env(), c);
-    }
-
-    public ErlNifTerm ReleasePointerResource(ErlNifTerm c) {
-      return Imports.erldotnet_release_pointer_resource(Env(), c);
+    public Delegate PointerResourceToDelegate(ErlNifTerm c) {
+      var ptr = Imports.erldotnet_unpack_pointer_resource(Env(), c);
+      var handle = GCHandle.FromIntPtr(ptr);
+      Delegate del = (Delegate)handle.Target;
+      handle.Free();
+      return del;
     }
 
     public void Send(Pid target, ErlNifTerm term) {

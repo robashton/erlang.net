@@ -21,7 +21,7 @@ namespace CsLib.Erlang
       IntPtr ptr = Marshal.GetFunctionPointerForDelegate(del);
       var tuple = this.runtime.MakeTuple2(
                     this.runtime.MakeAtom("receive"),
-                    this.runtime.MakePointerResource(ptr));
+                    this.runtime.DelegateToPointerResource(del));
       return new ProcessResult(this.runtime, tuple);
     }
 
@@ -35,7 +35,7 @@ namespace CsLib.Erlang
       var tuple = this.runtime.MakeTuple3(
                     this.runtime.MakeAtom("receive"),
                     this.runtime.MakeInt(timeout),
-                    this.runtime.MakePointerResource(ptr));
+                    this.runtime.DelegateToPointerResource(del));
       return new ProcessResult(this.runtime, tuple);
     }
 

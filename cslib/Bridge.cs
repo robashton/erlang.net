@@ -93,15 +93,7 @@ namespace CsLib
     public ErlNifTerm ProcessInit(ErlNifEnv env, ErlNifTerm fn)
     {
       this.runtime.SetEnv(env);
-
-      // Note: These Unpack/Release calls are as a result of the 
-      // MakePointerResource calls in Spawn and ProcessContext respectively
-      // Some thought is probably required here to not end up with a heap of 
-      // garbage disposal issue
-      IntPtr fnPtr = this.runtime.UnpackPointerResource(fn);
-      this.runtime.ReleasePointerResource(fn);
-
-      ProcessInit callback = Marshal.GetDelegateForFunctionPointer<ProcessInit>(fnPtr);
+      ProcessInit callback = (ProcessInit)this.runtime.PointerResourceToDelegate(fn);
       ProcessResult result = callback(new ProcessContext(this.runtime));
       return result.Native;
     }
@@ -109,11 +101,7 @@ namespace CsLib
     public ErlNifTerm ProcessMsg(ErlNifEnv env, ErlNifTerm fn, ErlNifTerm msg)
     {
       this.runtime.SetEnv(env);
-
-      IntPtr fnPtr = this.runtime.UnpackPointerResource(fn);
-      this.runtime.ReleasePointerResource(fn);
-
-      ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fnPtr);
+      ProcessMsg callback = (ProcessMsg)this.runtime.PointerResourceToDelegate(fn);
       ProcessResult result = callback(new ProcessContext(this.runtime), msg);
       return result.Native;
     }
@@ -121,11 +109,7 @@ namespace CsLib
     public ErlNifTerm ProcessTimeout(ErlNifEnv env, ErlNifTerm fn)
     {
       this.runtime.SetEnv(env);
-
-      IntPtr fnPtr = this.runtime.UnpackPointerResource(fn);
-      this.runtime.ReleasePointerResource(fn);
-
-      ProcessMsg callback = Marshal.GetDelegateForFunctionPointer<ProcessMsg>(fnPtr);
+      ProcessMsg callback = (ProcessMsg)this.runtime.PointerResourceToDelegate(fn);
       ProcessResult result = callback(new ProcessContext(this.runtime), ErlNifTerm.Zero);
       return result.Native;
     }
