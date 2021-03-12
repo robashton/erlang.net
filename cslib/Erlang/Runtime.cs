@@ -48,6 +48,14 @@ namespace CsLib.Erlang
       return Imports.erldotnet_make_int(Env(), value);
     }
 
+    public ErlNifTerm MakeInt64(Int64 value) {
+      return Imports.erldotnet_make_int64(Env(), value);
+    }
+
+    public ErlNifTerm MakeString(String value) {
+      return Imports.erldotnet_make_string(Env(), new StringBuilder(value));
+    }
+
     public ErlNifTerm MakeTuple2(ErlNifTerm a, ErlNifTerm b) {
       return Imports.erldotnet_make_tuple2(Env(), a, b);
     }
@@ -59,6 +67,7 @@ namespace CsLib.Erlang
     public ErlNifTerm MakeList(ErlNifTerm a) {
       return Imports.erldotnet_make_list1(Env(), a);
     }
+
 
     public ErlNifTerm DelegateToPointerResource(Delegate del) {
       var handle = GCHandle.Alloc(del);
@@ -113,6 +122,7 @@ namespace CsLib.Erlang
       if(Imports.erldotnet_is_double(Env(), term)) {
         return typeof(double);
       }
+      
       if(Imports.erldotnet_is_number(Env(), term)) {
         if(Imports.erldotnet_is_int32(Env(), term)) {
           return typeof(Int32);
@@ -144,9 +154,14 @@ namespace CsLib.Erlang
       if(type == typeof(Pid)) {
         return Imports.erldotnet_get_pid(Env(), term);
       }
-
       if(type == typeof(Atom)) {
         return new Atom(Coerce<String>(term));
+      }
+      if(type == typeof(Int32)) {
+        return NativeToInt32(term);
+      }
+      if(type == typeof(Int64)) {
+        return NativeToInt64(term);
       }
       if(type == typeof(ErlNifTerm)) {
         return term;
@@ -205,6 +220,14 @@ namespace CsLib.Erlang
         return str;
       }
       return String.Empty;
+    }
+
+    public Int32 NativeToInt32(ErlNifTerm term) {
+      return Imports.erldotnet_term_to_int32(Env(), term);
+    }
+
+    public Int64 NativeToInt64(ErlNifTerm term) {
+      return Imports.erldotnet_term_to_int64(Env(), term);
     }
   }
 }

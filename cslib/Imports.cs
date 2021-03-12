@@ -22,6 +22,12 @@ namespace CsLib.Erlang
     internal static extern ErlNifTerm erldotnet_make_int(ErlNifEnv env, Int32 value);
 
     [DllImport("erldotnet")]
+    internal static extern ErlNifTerm erldotnet_make_int64(ErlNifEnv env, Int64 value);
+
+    [DllImport("erldotnet")]
+    internal static extern ErlNifTerm erldotnet_make_string(ErlNifEnv env, StringBuilder value);
+
+    [DllImport("erldotnet")]
     internal static extern ErlNifTerm erldotnet_make_tuple2(ErlNifEnv env, ErlNifTerm a, ErlNifTerm b);
 
     [DllImport("erldotnet")]
@@ -74,6 +80,12 @@ namespace CsLib.Erlang
 
     [DllImport("erldotnet")]
     internal static extern int erldotnet_term_to_string(ErlNifEnv env, IntPtr buffer, UInt32 bufferLength, ErlNifTerm value);
+
+    [DllImport("erldotnet")]
+    internal static extern Int32 erldotnet_term_to_int32(ErlNifEnv env, ErlNifTerm value);
+
+    [DllImport("erldotnet")]
+    internal static extern Int64 erldotnet_term_to_int64(ErlNifEnv env, ErlNifTerm value);
 
     [DllImport("erldotnet")]
     internal static extern int erldotnet_tuple_length(ErlNifEnv env, ErlNifTerm value);

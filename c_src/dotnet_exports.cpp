@@ -27,6 +27,14 @@ extern "C" ERL_NIF_TERM erldotnet_make_int(ErlNifEnv* env, int32_t value) {
   return enif_make_int(env, value);
 }
 
+extern "C" ERL_NIF_TERM erldotnet_make_int64(ErlNifEnv* env, int64_t value) {
+  return enif_make_int64(env, value);
+}
+
+extern "C" ERL_NIF_TERM erldotnet_make_string(ErlNifEnv* env, const char* value) {
+  return enif_make_string(env, value, ERL_NIF_LATIN1);
+}
+
 extern "C" ERL_NIF_TERM erldotnet_make_tuple2(ErlNifEnv* env, ERL_NIF_TERM a, ERL_NIF_TERM b) {
   return enif_make_tuple2(env, a, b);
 }
@@ -138,6 +146,18 @@ extern "C" int erldotnet_term_to_string(ErlNifEnv* env, char* buffer, unsigned i
     return enif_get_string(env, term, buffer, buffer_len, ERL_NIF_LATIN1);
   }
   return -1;
+}
+
+extern "C" int32_t erldotnet_term_to_int32(ErlNifEnv* env, ERL_NIF_TERM term) {
+  int32_t result;
+  enif_get_int(env, term, &result);
+  return result;
+}
+
+extern "C" int64_t erldotnet_term_to_int64(ErlNifEnv* env, ERL_NIF_TERM term) {
+  int64_t result;
+  enif_get_int64(env, term, &result);
+  return result;
 }
 
 
