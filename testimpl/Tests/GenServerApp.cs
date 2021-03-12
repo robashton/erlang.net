@@ -10,6 +10,7 @@ namespace TestImpl.Tests
 
     }
   }
+
     public class GenServerApp : IApp
     {
       Runtime runtime;

@@ -10,6 +10,7 @@ all_test_() ->
   with_bridge(fun(Bridge) ->
                   lists:concat([ basic_app:tests(Bridge)
                                , type_round_trip:tests(Bridge)
+                               , basic_gen:tests(Bridge)
                               ])
               end).
 
