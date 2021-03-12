@@ -74,12 +74,8 @@ namespace CsLib.Erlang
     public ErlNifTerm MakeObjectReference(Object obj) {
       var handle = GCHandle.Alloc(obj);
       var ptr = GCHandle.ToIntPtr(handle);
-      return Imports.erldotnet_make_pointer_resource(Env(), ptr);
+      return Imports.erldotnet_make_pointer_resource(Env(), &Bridge.Return, ptr);
     }
-
-//    public void FreeObjectReference(ErlNifTerm ref) {
-//      Imports.erldotnet_release_pointer_resource(Env(), ref);
-//    }
 
     public Object GetObjectReference(ErlNifTerm c) {
       var ptr = Imports.erldotnet_unpack_pointer_resource(Env(), c);

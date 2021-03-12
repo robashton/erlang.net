@@ -13,8 +13,8 @@
 #include "coreclr_delegates.h"
 #include "hostfxr.h"
 #include "guff.h"
-#include "types.h"
 #include "utils.h"
+#include "types.h"
 
 typedef void* GCHANDLE;
 
@@ -27,29 +27,6 @@ typedef void* GCHANDLE;
     #define TRACE(...) {}
 #endif
 
-// Callbacks that C# will give us by populating the struct
-typedef void (*return_gchandle_fn)(GCHANDLE handle);
-typedef ERL_NIF_TERM (*run_app_from_assembly_fn)(ErlNifEnv* env, GCHANDLE handle, const char_t* assemblyName, const char_t* typeName);
-typedef ERL_NIF_TERM (*erlang_callback_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn, ERL_NIF_TERM args);
-
-typedef struct bridge_context_ {
-  void* gchandle;
-  return_gchandle_fn return_gchandle;
-  run_app_from_assembly_fn run_app_from_assembly;
-  erlang_callback_fn erlang_callback;
-} bridge_context;
-
-typedef struct hostfxr_resource_ {
-  hostfxr_initialize_for_runtime_config_fn init_fptr;
-  hostfxr_get_runtime_delegate_fn get_delegate_fptr;
-  hostfxr_close_fn close_fptr;
-  load_assembly_and_get_function_pointer_fn load_assembly_and_get_function_pointer;
-} hostfxr_resource;
-
-
-typedef struct dotnet_entry_point_ {
-  component_entry_point_fn fn;
-} dotnet_entry_point;
 
 
 ERL_NIF_TERM param_error(ErlNifEnv* env, const char_t* param) {
@@ -67,9 +44,14 @@ static void bridge_resource_destroy(ErlNifEnv *env, void *obj)
   }
 }
 
-static void callback_resource_destroy(ErlNifEnv *env, void *obj)
+static void pointer_resource_destroy(ErlNifEnv *env, void *obj)
 {
-  callback_resource *resource = (callback_resource*) obj;
+  pointer_resource *resource = (pointer_resource*) obj;
+  if(resource->data) {
+    resource->return_gchandle(resource->data);
+    resource->data = NULL;
+    resource->return_gchandle = NULL;
+  }
 }
 
 uint8_t get_dotnet_load_assembly(const char_t *config_path, hostfxr_resource* hostfxr)
@@ -129,8 +111,8 @@ static int load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info) {
   globals->fn = enif_open_resource_type(env, NULL, "DotNetFn", NULL, ERL_NIF_RT_CREATE, NULL);
   globals->hostfxr_resource = enif_open_resource_type(env, NULL, "HostFxrResource", NULL, ERL_NIF_RT_CREATE, NULL);
   globals->bridge_resource = enif_open_resource_type(env, NULL, "BridgeResource", bridge_resource_destroy, ERL_NIF_RT_CREATE, NULL);
-  globals->callback_resource = enif_open_resource_type(env, NULL, "CallbackResource", callback_resource_destroy, ERL_NIF_RT_CREATE, NULL);
-  globals->pointer_resource = enif_open_resource_type(env, NULL, "PointerResource", NULL, ERL_NIF_RT_CREATE, NULL);
+  globals->callback_resource = enif_open_resource_type(env, NULL, "CallbackResource", NULL, ERL_NIF_RT_CREATE, NULL);
+  globals->pointer_resource = enif_open_resource_type(env, NULL, "PointerResource", pointer_resource_destroy, ERL_NIF_RT_CREATE, NULL);
 
   return 0;
 }

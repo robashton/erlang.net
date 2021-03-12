@@ -1,3 +1,6 @@
+#ifndef GUFF_H
+#define GUFF_H
+
 #ifdef WINDOWS
 #include <Windows.h>
 
@@ -48,3 +51,5 @@ void *get_export(void *h, const char *name)
 }
 #endif
 
+
+#endif

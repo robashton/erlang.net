@@ -55,11 +55,21 @@ extern "C" ERL_NIF_TERM erldotnet_make_pid(ErlNifEnv* env, ErlNifPid value) {
   return enif_make_pid(env, &value);
 }
 
-extern "C" ERL_NIF_TERM erldotnet_make_pointer_resource(ErlNifEnv* env, void* ptr) {
+extern "C" ERL_NIF_TERM erldotnet_make_pointer_resource(ErlNifEnv* env, return_gchandle_fn return_gchandle, void* ptr) {
   nif_globals* globals = (nif_globals*)enif_priv_data(env);
   pointer_resource* wrapper = (pointer_resource*)enif_alloc_resource(globals->pointer_resource, sizeof(pointer_resource));
   wrapper->data = ptr;
-  return enif_make_resource(env, wrapper);
+  wrapper->return_gchandle = return_gchandle;
+
+  // Note: This makes the resource returned from this entirely unusable
+  // outside of 
+  // a) The call that invoked this function in the first place
+  // b) any invocations from erlang that use this resource
+  // It cannot be held by C#, which is fine - because it's an ERL_NIF_TERM
+  // and we're not allowed to do that anyway
+  ERL_NIF_TERM resource = enif_make_resource(env, wrapper);
+  enif_release_resource(wrapper);
+  return resource;
 }
 
 extern "C" void* erldotnet_unpack_pointer_resource(ErlNifEnv* env, ERL_NIF_TERM resource) {
@@ -78,7 +88,6 @@ extern "C" ERL_NIF_TERM erldotnet_release_pointer_resource(ErlNifEnv* env, ERL_N
 
   if(enif_get_resource(env, resource, globals->pointer_resource, (void**)&ptr)) {
     enif_release_resource(ptr->data);
-    ptr->data = NULL;
   }
   return enif_make_atom(env, "ok");
 }
