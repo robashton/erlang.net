@@ -16,13 +16,11 @@ namespace TestImpl.Tests
       }
 
       ProcessResult WorkerLoop(ProcessContext ctx) {
-        return ctx.Receive(WorkerLoopReceive);
+        return ctx.Receive((ProcessContext ctx, Object msg) => WorkerLoopReceive(ctx, msg));
       }
 
-      ProcessResult WorkerLoopReceive(ProcessContext ctx, ErlNifTerm term)
+      ProcessResult WorkerLoopReceive(ProcessContext ctx, Object msg)
       {
-        Object msg = runtime.ExtractAuto(term);
-
         switch(msg) 
         {
           case Atom cmd when cmd == "bye": 
@@ -36,7 +34,7 @@ namespace TestImpl.Tests
             Console.WriteLine("Unexpected message received, looping");
             break;
         }
-        return ctx.Receive(WorkerLoopReceive);
+        return ctx.Receive((ProcessContext ctx, Object msg) => WorkerLoopReceive(ctx, msg));
       }
     }
 }

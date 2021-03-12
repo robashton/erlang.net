@@ -17,7 +17,7 @@ namespace TestImpl
       }
 
       ProcessResult WorkerLoop(ProcessContext ctx) {
-        return ctx.Receive(5000, WorkerLoopReceive);
+        return ctx.Receive(5000, (ProcessContext ctx, ErlNifTerm msg) => WorkerLoopReceive(ctx, msg));
       }
 
       ProcessResult WorkerLoopReceive(ProcessContext ctx, ErlNifTerm msg)
@@ -28,7 +28,7 @@ namespace TestImpl
         } else {
           this.WaitCount++;
           Console.WriteLine("C# timed out waiting for message, receiving again \r");
-          return ctx.Receive(5000, WorkerLoopReceive);
+          return ctx.Receive(5000, (ProcessContext ctx, ErlNifTerm msg) => WorkerLoopReceive(ctx, msg));
         }
       }
     }

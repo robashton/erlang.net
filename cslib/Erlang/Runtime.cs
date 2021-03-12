@@ -10,6 +10,7 @@ namespace CsLib.Erlang
 {
   public delegate ProcessResult ProcessInit(ProcessContext ctx);
   public delegate ProcessResult ProcessMsg(ProcessContext ctx, ErlNifTerm msg);
+  public delegate ProcessResult ProcessMsg<T>(ProcessContext ctx, T msg);
 
   public unsafe sealed class Runtime
   {
@@ -132,6 +133,9 @@ namespace CsLib.Erlang
     }
      
     public object Coerce(ErlNifTerm term, Type type) {
+      if(type == typeof(Object)) {
+        return ExtractAuto(term);
+      }
       if(type == typeof(String)) {
         return NativeToString(term);
       }
