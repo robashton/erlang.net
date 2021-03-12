@@ -64,8 +64,12 @@ namespace CsLib.Erlang
       return Imports.erldotnet_make_tuple3(Env(), a, b, c);
     }
 
-    public ErlNifTerm MakeList(ErlNifTerm a) {
-      return Imports.erldotnet_make_list1(Env(), a);
+    public ErlNifTerm MakeList(ErlNifTerm value) {
+      return Imports.erldotnet_make_list1(Env(), value);
+    }
+
+    public ErlNifTerm MakePid(Pid value) {
+      return Imports.erldotnet_make_pid(Env(), value);
     }
 
 

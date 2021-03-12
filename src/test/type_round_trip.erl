@@ -22,5 +22,8 @@ tests(Bridge) ->
             [ { <<"Round trip an Atom">>, hi },
               { <<"Round trip an Int32">>, 1337 },
               { <<"Round trip an Int64">>, 4000000000 },
-              { <<"Round trip a string list">>, "hello joe" }
+              { <<"Round trip a string list">>, "hello joe" },
+              { <<"Round trip a pid">>, self() },
+              { <<"Round trip a homogeneous tuple2">>, { 10, 20 } },
+              { <<"Round trip a heterogeneous tuple2">>, { 10, "woo" } }
             ]).

@@ -37,6 +37,9 @@ namespace CsLib.Erlang
     internal static extern ErlNifTerm erldotnet_make_list1(ErlNifEnv env, ErlNifTerm a);
 
     [DllImport("erldotnet")]
+    internal static extern ErlNifTerm erldotnet_make_pid(ErlNifEnv env, Pid value);
+
+    [DllImport("erldotnet")]
     internal static extern ErlNifTerm erldotnet_make_pointer_resource(ErlNifEnv env, IntPtr ptr);
 
     [DllImport("erldotnet")]

@@ -47,6 +47,10 @@ extern "C" ERL_NIF_TERM erldotnet_make_list1(ErlNifEnv* env, ERL_NIF_TERM a) {
   return enif_make_list1(env, a);
 }
 
+extern "C" ERL_NIF_TERM erldotnet_make_pid(ErlNifEnv* env, ErlNifPid value) {
+  return enif_make_pid(env, &value);
+}
+
 extern "C" ERL_NIF_TERM erldotnet_make_pointer_resource(ErlNifEnv* env, void* ptr) {
   nif_globals* globals = (nif_globals*)enif_priv_data(env);
   pointer_resource* wrapper = (pointer_resource*)enif_alloc_resource(globals->pointer_resource, sizeof(pointer_resource));
