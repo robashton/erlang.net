@@ -2,32 +2,42 @@
 
 -export([ start_link/1 ]).
 
--export([ init/1 ]).
+-export([ init/1
+        , handle_info/2
+        ]).
 
 -record(state,
         { bridge :: term()
         , ref :: reference()
+        , handle_info :: undefined | reference()
         }).
 
-start_link(CallbackResource) ->
-  { ok, Pid } = gen_server:start_link(?MODULE, [CallbackResource], []),
+start_link(Callbacks) ->
+  { ok, Pid } = gen_server:start_link(?MODULE, [Callbacks], []),
   Pid.
 
-init([CallbackResource]) ->
+init([#{ init := Init
+      ,  handleinfo := HandleInfo
+       }]) ->
   {ok ,Bridge } = dotnethost_bridge:get_bridge(),
-  case dotnet:erlang_callback(Bridge, CallbackResource, []) of
+  case dotnet:erlang_callback(Bridge, Init, []) of
     { ok, Ref } ->
       { ok, #state { bridge = Bridge
-             , ref = Ref
-             } }
+                   , ref = Ref
+                   , handle_info = HandleInfo
+                   } }
   end.
 
 
-handle_info(Msg, State) ->
-  %% So, we could just have explicit calls
-  %% or we could pass in a pile of delegates on startup
-  %% my mind is unclear
-  %% dotnet:handle_info(Bridge, , []).
-  %% vs
-  %% dotnet:erlang_callback(Bridge, State#state.handle_info, [ Msg, State#state.ref ]);
-  { noreply, State }.
+handle_info(Msg, State = #state { handle_info = undefined }) ->
+  io:format(user, ".NET gen server received message ~p but no handle_info implemented ~n", [ Msg ]),
+  { noreply, State };
+
+handle_info(Msg, State = #state { handle_info = HandleInfo
+                                , bridge = Bridge
+                                , ref = Ref
+                                }) ->
+  case dotnet:erlang_callback(Bridge, HandleInfo, { Msg, Ref }) of
+    { noreply, Ref2 } ->
+      { noreply, State#state { ref = Ref2 } }
+  end.

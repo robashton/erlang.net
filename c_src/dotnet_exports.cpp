@@ -35,6 +35,10 @@ extern "C" ERL_NIF_TERM erldotnet_make_string(ErlNifEnv* env, const char* value)
   return enif_make_string(env, value, ERL_NIF_LATIN1);
 }
 
+extern "C" ERL_NIF_TERM erldotnet_make_tuple(ErlNifEnv* env, uint32_t length, ERL_NIF_TERM terms[]) {
+  return enif_make_tuple_from_array(env, terms, length);
+}
+
 extern "C" ERL_NIF_TERM erldotnet_make_tuple2(ErlNifEnv* env, ERL_NIF_TERM a, ERL_NIF_TERM b) {
   return enif_make_tuple2(env, a, b);
 }
@@ -49,6 +53,20 @@ extern "C" ERL_NIF_TERM erldotnet_make_list1(ErlNifEnv* env, ERL_NIF_TERM a) {
 
 extern "C" ERL_NIF_TERM erldotnet_make_listn(ErlNifEnv* env, uint32_t length, ERL_NIF_TERM a[]) {
   return enif_make_list_from_array(env, a, length);
+}
+
+extern "C" ERL_NIF_TERM erldotnet_make_map(ErlNifEnv* env, uint32_t length, ERL_NIF_TERM keys[], ERL_NIF_TERM values[]) {
+  ERL_NIF_TERM out;
+  if(enif_make_map_from_arrays(env, keys, values, length, &out))
+    return out;
+  return 0;
+}
+
+extern "C" ERL_NIF_TERM erldotnet_get_map_value(ErlNifEnv* env, ERL_NIF_TERM key, ERL_NIF_TERM map) {
+  ERL_NIF_TERM out;
+  if(enif_get_map_value(env, map, key, &out))
+    return out;
+  return 0;
 }
 
 extern "C" ERL_NIF_TERM erldotnet_make_pid(ErlNifEnv* env, ErlNifPid value) {
@@ -97,6 +115,11 @@ extern "C" int erldotnet_send(ErlNifEnv* env, ErlNifPid pid, ERL_NIF_TERM term) 
   return 1;
 }
 
+extern "C" uint8_t erldotnet_is_valid_term(ErlNifEnv* env,  ERL_NIF_TERM term) {
+  return term > 0;
+}
+
+
 extern "C" uint8_t erldotnet_is_tuple(ErlNifEnv* env,  ERL_NIF_TERM term) {
   return enif_is_tuple(env, term) == 1;
 }
@@ -124,9 +147,17 @@ extern "C" uint8_t erldotnet_is_int32(ErlNifEnv* env,  ERL_NIF_TERM term) {
   return enif_get_int(env, term, &num) == 1;
 }
 
-extern "C" uint8_t erldotnet_is_int64(ErlNifEnv* env,  ERL_NIF_TERM term) {
-  long int num;
-  return enif_get_int64(env, term, &num) == 1;
+extern "C" uint8_t erldotnet_is_pointer_resource(ErlNifEnv* env,  ERL_NIF_TERM term) {
+  nif_globals* globals = (nif_globals*)enif_priv_data(env);
+  pointer_resource* ptr;
+
+  if(enif_get_resource(env, term, globals->pointer_resource, (void**)&ptr)) {
+    return 1;
+  }
+  return 0;
+}
+
+extern "C" uint8_t erldotnet_is_int64(ErlNifEnv* env,  ERL_NIF_TERM term) { long int num; return enif_get_int64(env, term, &num) == 1;
 }
 
 extern "C" uint8_t erldotnet_is_string(ErlNifEnv* env,  ERL_NIF_TERM term) {
@@ -148,8 +179,9 @@ extern "C" int erldotnet_string_or_atom_length(ErlNifEnv* env, ERL_NIF_TERM term
     enif_get_atom_length(env,term, &len, ERL_NIF_LATIN1);
     return len;
   }
+
   if(erldotnet_is_string(env, term)) { 
-    enif_get_list_length(env,term, &len);
+    enif_get_list_length(env, term, &len);
     return len;
   }
   return -1;

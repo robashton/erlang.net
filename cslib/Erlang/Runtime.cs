@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Text;
 using System.Reflection;
@@ -28,7 +29,7 @@ namespace CsLib.Erlang
 
     public ErlNifTerm CallErlangFn(String module, String fn, ErlNifTerm[] args) {
       return Imports.erldotnet_call_erlang_fn(Env(), 
-          MakeTuple3(MakeAtom(module), MakeAtom(fn), MakeList((uint)args.Length, args)));
+          MakeTuple3(MakeAtom(module), MakeAtom(fn), MakeList(args)));
     }
 
     public ErlNifTerm WriteDebug(String value) {
@@ -51,6 +52,10 @@ namespace CsLib.Erlang
       return Imports.erldotnet_make_string(Env(), new StringBuilder(value));
     }
 
+    public ErlNifTerm MakeTuple(ErlNifTerm[] terms) {
+      return Imports.erldotnet_make_tuple(Env(), (uint)terms.Length, terms);
+    }
+
     public ErlNifTerm MakeTuple2(ErlNifTerm a, ErlNifTerm b) {
       return Imports.erldotnet_make_tuple2(Env(), a, b);
     }
@@ -63,8 +68,12 @@ namespace CsLib.Erlang
       return Imports.erldotnet_make_list1(Env(), value);
     }
 
-    public ErlNifTerm MakeList(uint length, ErlNifTerm[] value) {
-      return Imports.erldotnet_make_listn(Env(), length, value);
+    public ErlNifTerm MakeList(ErlNifTerm[] value) {
+      return Imports.erldotnet_make_listn(Env(), (uint)value.Length, value);
+    }
+
+    public ErlNifTerm MakeMap(ErlNifTerm[] keys, ErlNifTerm[] values) {
+      return Imports.erldotnet_make_map(Env(), (uint)keys.Length, keys, values);
     }
 
     public ErlNifTerm MakePid(Pid value) {
@@ -98,6 +107,46 @@ namespace CsLib.Erlang
     public object ExtractAuto(ErlNifTerm term) {
       Type t = DeriveType(term);
       return Coerce(term, t);
+    }
+
+    public ErlNifTerm ExportAuto(Object obj) {
+      if(obj == null) { return this.MakeAtom("undefined"); }
+      Type t = obj.GetType();
+
+      if(t == typeof(Atom)) { return this.MakeAtom((Atom)obj); }
+      if(t == typeof(Int32)) { return this.MakeInt((Int32)obj); }
+      if(t == typeof(Int64)) { return this.MakeInt64((Int64)obj); }
+      if(t == typeof(String)) { return this.MakeString((String)obj); }
+      if(t == typeof(Pid)) { return this.MakePid((Pid)obj); }
+      if(t == typeof(ErlNifTerm)) { return (ErlNifTerm)obj; }
+      if(t == typeof(ErlangCallback)) { return MakeObjectReference(obj); }
+
+      if(t.IsTuple()) {
+        ITuple tuple = (ITuple)obj;
+        var terms = Enumerable.Range(0, tuple.Length)
+              .Select(i => ExportAuto(tuple[i]))
+              .ToArray();
+        return MakeTuple(terms);
+      }
+
+      if(t.IsRecord()) {
+
+        var nameTerms = t.GetProperties()
+          .Select(x => MakeAtom(x.Name.ToLower()))
+          .ToArray();
+
+        var valueTerms = t.GetProperties()
+          .Select(x => ExportAuto(x.GetValue(obj)))
+          .ToArray();
+
+        return this.MakeMap(nameTerms, valueTerms);
+      }
+
+      return ErlNifTerm.Zero;
+
+      // TODO: Float/Double
+      // TODO: Binary
+
     }
 
     public Type DeriveType(ErlNifTerm term)  {
@@ -141,12 +190,26 @@ namespace CsLib.Erlang
       if(Imports.erldotnet_is_binary(Env(), term)) {
         return typeof(byte[]);
       }
+      if(Imports.erldotnet_is_pointer_resource(Env(), term)) {
+        return typeof(ObjectReference);
+      }
       return typeof(ErlNifTerm);
     }
+
+    // To differentiate from 'object'
+    private class ObjectReference{};
      
     public object Coerce(ErlNifTerm term, Type type) {
+      if(!Imports.erldotnet_is_valid_term(Env(), term)) { return null; }
+
       if(type == typeof(Object)) {
         return ExtractAuto(term);
+      }
+      if(type == typeof(ObjectReference)) {
+        return GetObjectReference(term);
+      }
+      if(type == typeof(ErlangCallback)) {
+        return GetObjectReference(term);
       }
       if(type == typeof(String)) {
         return NativeToString(term);
@@ -155,7 +218,11 @@ namespace CsLib.Erlang
         return Imports.erldotnet_get_pid(Env(), term);
       }
       if(type == typeof(Atom)) {
-        return new Atom(Coerce<String>(term));
+        return Coerce<String>(term) switch 
+        {
+          "undefined" => null,
+          String Other => new Atom(Other)
+        };
       }
       if(type == typeof(Int32)) {
         return NativeToInt32(term);
@@ -167,17 +234,22 @@ namespace CsLib.Erlang
         return term;
       }
 
-      var tupleTypes = new Type[]
-      { typeof(Tuple<,>),
-        typeof(Tuple<,,>),
-        typeof(Tuple<,,,>),
-        typeof(Tuple<,,,,>),
-        typeof(Tuple<,,,,,>),
-        typeof(Tuple<,,,,,,>),
-        typeof(Tuple<,,,,,,,>),
-      };
+      if(type.IsRecord()) {
+        var obj = Activator.CreateInstance(type);
 
-      if(type.IsGenericType && tupleTypes.Any(x => x == type.GetGenericTypeDefinition())) {
+        type.GetProperties()
+          .ToList()
+          .ForEach(x =>  {
+                  var fieldName = MakeAtom(x.Name.ToLower());
+                  var value= Imports.erldotnet_get_map_value(Env(), fieldName, term);
+                  var transformed = Coerce(value, x.PropertyType);
+                  x.SetValue(obj, transformed);
+              });
+
+        return obj;
+      }
+
+      if(type.IsTuple()) {
         var argumentTypes = type.GetGenericArguments();
         var tupleLength = TupleLength(term);
         if(tupleLength < 0) {
@@ -211,12 +283,18 @@ namespace CsLib.Erlang
 
     public String NativeToString(ErlNifTerm term) {
       int length = 0;
+
       if((length = Imports.erldotnet_string_or_atom_length(Env(), term)) > 0) {
         int allocLength = length + 1;
+
         IntPtr ptr = Marshal.AllocHGlobal(allocLength);
+
         Imports.erldotnet_term_to_string(Env(), ptr, (uint)allocLength, term);
+
         String str = Marshal.PtrToStringAnsi(ptr);
+
         Marshal.FreeHGlobal(ptr);
+
         return str;
       }
       return String.Empty;
@@ -229,5 +307,26 @@ namespace CsLib.Erlang
     public Int64 NativeToInt64(ErlNifTerm term) {
       return Imports.erldotnet_term_to_int64(Env(), term);
     }
+    
   }
+
+  internal static class TypeExtensions
+  {
+    internal static bool IsTuple(this Type type) {
+      var tupleTypes = new Type[]
+      { typeof(Tuple<,>),
+        typeof(Tuple<,,>),
+        typeof(Tuple<,,,>),
+        typeof(Tuple<,,,,>),
+        typeof(Tuple<,,,,,>),
+        typeof(Tuple<,,,,,,>),
+        typeof(Tuple<,,,,,,,>),
+      };
+
+      return (type.IsGenericType && tupleTypes.Any(x => x == type.GetGenericTypeDefinition()));
+    }
+
+    public static bool IsRecord(this Type type) => type.GetMethod("<Clone>$") != null; // yikes
+  }
+
 }
