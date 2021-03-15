@@ -1,4 +1,4 @@
--module(dotnetgenserver).
+-module(dotnet_genserver).
 
 -export([ start_link/1 ]).
 

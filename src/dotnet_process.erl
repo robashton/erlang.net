@@ -1,4 +1,4 @@
--module(dotnetprocess).
+-module(dotnet_process).
 
 -export([ init/1 ]).
 

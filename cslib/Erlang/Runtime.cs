@@ -15,6 +15,11 @@ namespace CsLib.Erlang
   {
     private static ThreadLocal<ErlNifEnv> env = new ThreadLocal<ErlNifEnv>();
 
+    public dynamic Modules
+    { 
+      get { return new Modules(this); }
+    }
+
     internal ErlNifEnv Env() {
       return env.Value;
     }

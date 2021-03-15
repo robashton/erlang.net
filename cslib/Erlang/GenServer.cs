@@ -67,7 +67,7 @@ namespace CsLib.Erlang
       var callbacks = new DotNetGenServerArgs { Init = initCallback
                                               , HandleInfo = handleInfoInterface == null ? null : handleInfoCallback };
 
-      return runtime.CallErlangFn("dotnetgenserver", "start_link", new [] { runtime.ExportAuto(callbacks) }); 
+      return runtime.Modules.DotnetGenserver.StartLink(callbacks); 
     }
   }
 

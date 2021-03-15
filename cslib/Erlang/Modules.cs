@@ -1,4 +1,5 @@
 using System;
+using System.Dynamic;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -11,27 +12,17 @@ namespace CsLib.Erlang
 {
   public sealed class Modules : DynamicObject
   {
+    private Runtime runtime;
+
+    public Modules(Runtime runtime) {
+      this.runtime = runtime;
+    }
     
     public override bool TryGetMember(
         GetMemberBinder binder, out object result)
     {
-      return new 
+      result = new Functions(runtime, binder.Name);
+      return true;
     }
-
-    // If you try to set a value of a property that is
-    // not defined in the class, this method is called.
-    public override bool TrySetMember(
-        SetMemberBinder binder, object value)
-    {
-        // Converting the property name to lowercase
-        // so that property names become case-insensitive.
-        dictionary[binder.Name.ToLower()] = value;
-
-        // You can always add a value to a dictionary,
-        // so this method always returns true.
-        return true;
-    }
-
   }
-
 }
