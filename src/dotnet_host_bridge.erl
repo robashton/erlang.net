@@ -1,4 +1,4 @@
--module(dotnethost_bridge).
+-module(dotnet_host_bridge).
 
 -behaviour(gen_server).
 

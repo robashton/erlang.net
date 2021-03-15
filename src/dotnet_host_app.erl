@@ -1,4 +1,4 @@
--module(dotnethost_app).
+-module(dotnet_host_app).
 
 
 -behaviour(application).
@@ -8,7 +8,7 @@
 
 start(_StartType, _Args) ->
   { ok, HostFxr } = dotnet:load_hostfxr(),
-  dotnethost_sup:start_link(HostFxr).
+  dotnet_host_sup:start_link(HostFxr).
 
 stop(_State) ->
   ok.

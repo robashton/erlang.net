@@ -29,8 +29,8 @@ create_host() ->
   end.
 
 start_bridge(HostFxr) ->
-  { ok, Pid } = dotnethost_bridge:start_link(HostFxr),
-  { ok, Bridge } = dotnethost_bridge:get_bridge(),
+  { ok, Pid } = dotnet_host_bridge:start_link(HostFxr),
+  { ok, Bridge } = dotnet_host_bridge:get_bridge(),
   { Pid, Bridge }.
 
 stop_bridge({Pid, _}) ->

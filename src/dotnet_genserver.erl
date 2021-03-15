@@ -19,7 +19,7 @@ start_link(Callbacks) ->
 init([#{ init := Init
       ,  handleinfo := HandleInfo
        }]) ->
-  {ok ,Bridge } = dotnethost_bridge:get_bridge(),
+  {ok ,Bridge } = dotnet_host_bridge:get_bridge(),
   case dotnet:erlang_callback(Bridge, Init, []) of
     { ok, Ref } ->
       { ok, #state { bridge = Bridge

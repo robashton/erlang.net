@@ -1,4 +1,4 @@
--module(dotnethost_sup).
+-module(dotnet_host_sup).
 
 -behaviour(supervisor).
 
@@ -13,8 +13,8 @@ start_link(HostFxr) ->
 
 init([HostFxr]) ->
   {ok, { #{ strategy => one_for_one  }, [
-                                         #{ id => dotnethost_bridge
-                                            , start => { dotnethost_control, start_link, [HostFxr] }
+                                         #{ id => dotnet_host_bridge
+                                            , start => { dotnet_host_control, start_link, [HostFxr] }
                                             , type => worker
                                           }
                                         ]}}.
