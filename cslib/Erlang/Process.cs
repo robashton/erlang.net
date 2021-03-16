@@ -21,8 +21,7 @@ namespace CsLib.Erlang
         var processResult = init(new Process(runtime));
         return processResult.Native;
       };
-      var result = runtime.Modules.DotnetProcess.Init(del); 
-      return runtime.Coerce<Pid>(result);
+      return runtime.Modules.DotnetProcess.Init(del); 
     }
 
 

@@ -39,7 +39,7 @@ namespace CsLib.Erlang
 
 
   public sealed class GenServer {
-    public static ErlNifTerm StartLink<T>(Runtime runtime, GenInit<T> init) 
+    public static Object StartLink<T>(Runtime runtime, GenInit<T> init) 
     {
       var handleInfoInterface = typeof(T).GetInterfaces()
                                          .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IHandleInfo<>))

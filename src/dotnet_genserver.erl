@@ -13,8 +13,7 @@
         }).
 
 start_link(Callbacks) ->
-  { ok, Pid } = gen_server:start_link(?MODULE, [Callbacks], []),
-  Pid.
+  gen_server:start_link(?MODULE, [Callbacks], []).
 
 init([#{ init := Init
       ,  handleinfo := HandleInfo

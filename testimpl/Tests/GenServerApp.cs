@@ -35,8 +35,12 @@ namespace TestImpl.Tests
       public ErlNifTerm Start(Runtime runtime)
       {
         this.runtime = runtime;
-        var pid = GenServer.StartLink<MyGenServer>(runtime, (ctx) => ctx.Ok(new MyGenServer(runtime)));
-        return runtime.MakeTuple2( runtime.MakeAtom("ok"), pid );
+        switch(GenServer.StartLink<MyGenServer>(runtime, (ctx) => ctx.Ok(new MyGenServer(runtime)))) {
+          case Tuple<Atom, Pid> result:
+            return runtime.MakeTuple2( runtime.MakeAtom(result.Item1), runtime.MakePid(result.Item2) );
+          default:
+            throw new InvalidOperationException();
+        }
       }
     }
 }

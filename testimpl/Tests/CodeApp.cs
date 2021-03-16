@@ -15,8 +15,7 @@ namespace TestImpl.Tests
     public HandleInfoResult HandleInfo(HandleInfoContext ctx, Object msg) {
       switch(msg) {
         case Tuple<Atom, Pid, String, Byte[]> c when c.Item1 == "write": 
-          ErlNifTerm result = this.runtime.Modules.File.WriteFile(c.Item3, c.Item4);
-          switch (this.runtime.ExtractAuto(result)) {
+          switch(this.runtime.Modules.File.WriteFile(c.Item3, c.Item4)) {
             case Atom a when a == "ok":
               this.runtime.Send(c.Item2, this.runtime.MakeAtom("ok"));
               break;
@@ -37,8 +36,12 @@ namespace TestImpl.Tests
       public ErlNifTerm Start(Runtime runtime)
       {
         this.runtime = runtime;
-        var pid = GenServer.StartLink<CodeAppGenServer>(runtime, (ctx) => ctx.Ok(new CodeAppGenServer(runtime)));
-        return runtime.MakeTuple2( runtime.MakeAtom("ok"), pid );
+        switch(GenServer.StartLink<CodeAppGenServer>(runtime, (ctx) => ctx.Ok(new CodeAppGenServer(runtime)))) {
+          case Tuple<Atom, Pid> result:
+            return runtime.MakeTuple2( runtime.MakeAtom(result.Item1), runtime.MakePid(result.Item2) );
+          default:
+            throw new InvalidOperationException();
+        }
       }
     }
 }

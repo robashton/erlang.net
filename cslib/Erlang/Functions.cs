@@ -22,7 +22,8 @@ namespace CsLib.Erlang
     }
     
     public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result) {
-      result = runtime.CallErlangFn(DotNetToErlang(moduleName), DotNetToErlang(binder.Name), args.Select(x => runtime.ExportAuto(x)).ToArray());
+      ErlNifTerm term = runtime.CallErlangFn(DotNetToErlang(moduleName), DotNetToErlang(binder.Name), args.Select(x => runtime.ExportAuto(x)).ToArray());
+      result = this.runtime.ExtractAuto(term);
       if(result != null) { return true; }
       return false;
     }

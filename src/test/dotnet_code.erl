@@ -21,6 +21,21 @@ tests() ->
              ?assertEqual(<<"hello world">>, Data)
          end
      end }
+%%   { <<"Write a file over multiple calls the Erlang API">>,
+%%     fun(Bridge) ->
+%%         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+%%         Filename = temp_filename(),
+%%         Pid ! { open, Filename },
+%%         Pid ! { write, <<"blobone">> },
+%%         Pid ! { write, <<"blobtwo">> },
+%%         Pid ! { close, self() },
+%%         receive
+%%           Result ->
+%%             {ok, Data } = file:read_file(Filename),
+%%             ?assertEqual(ok, Result),
+%%             ?assertEqual(<<"bloboneblobtwo">>, Data)
+%%         end
+%%     end }
   ].
 
 
