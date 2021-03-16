@@ -2,12 +2,14 @@ using System;
 using CsLib;
 using CsLib.Erlang;
 
-using Msg = System.Tuple<System.String, CsLib.Erlang.Pid>;
+using InfoMsg = System.Tuple<System.String, CsLib.Erlang.Pid>;
+using CallMsg = System.String;
 
 namespace TestImpl.Tests
 {
 
-  public class MyGenServer : IHandleInfo<Msg>
+  public class MyGenServer : IHandleInfo<InfoMsg>
+                           , IHandleCall<CallMsg>
   {
     Runtime runtime;
 
@@ -15,7 +17,7 @@ namespace TestImpl.Tests
       this.runtime = runtime;
     }
 
-    public HandleInfoResult HandleInfo(HandleInfoContext ctx, Msg msg) {
+    public HandleInfoResult HandleInfo(HandleInfoContext ctx, InfoMsg msg) {
       switch(msg) {
         case ( "hello bob", _ ): 
           runtime.Send(msg.Item2, runtime.ExportAuto("hello joe"));
@@ -25,6 +27,16 @@ namespace TestImpl.Tests
           break;
       }
       return ctx.NoReply();
+    }
+
+    public HandleCallResult HandleCall(HandleCallContext ctx, CallMsg msg) {
+      switch(msg) {
+        case "hello bob": 
+          return ctx.Reply("hello joe");
+        default: 
+          return ctx.Reply("boobs");
+      }
+      return ctx.Reply("ohno");
     }
   }
 

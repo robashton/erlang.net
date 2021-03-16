@@ -7,6 +7,7 @@ namespace TestImpl.Tests
   public class CodeAppGenServer : IHandleInfo<Object>
   {
     Runtime runtime;
+    Pid fileHandle = Pid.Zero;
 
     public CodeAppGenServer(Runtime runtime) {
       this.runtime = runtime;
@@ -15,14 +16,19 @@ namespace TestImpl.Tests
     public HandleInfoResult HandleInfo(HandleInfoContext ctx, Object msg) {
       switch(msg) {
         case Tuple<Atom, Pid, String, Byte[]> c when c.Item1 == "write": 
-          switch(this.runtime.Modules.File.WriteFile(c.Item3, c.Item4)) {
-            case Atom a when a == "ok":
-              this.runtime.Send(c.Item2, this.runtime.MakeAtom("ok"));
-              break;
-            case Tuple<Atom, Atom> error:
-              this.runtime.Send(c.Item2, this.runtime.ExportAuto(error));
-              break;
-          }
+          Atom result = (Atom)this.runtime.Modules.File.WriteFile(c.Item3, c.Item4);
+          this.runtime.Send(c.Item2, this.runtime.MakeAtom(result));
+          break;
+        case Tuple<Atom, String> cmd when cmd.Item1 == "open":
+          Tuple <Atom, Pid> success = (Tuple<Atom,Pid>)this.runtime.Modules.File.Open(cmd.Item2, new object[] { new Atom("write") } );
+          this.fileHandle = success.Item2;
+          break;
+        case Tuple<Atom, byte[]> cmd when cmd.Item1 == "write":
+          this.runtime.Modules.File.Write(this.fileHandle, cmd.Item2);
+          break;
+        case Tuple<Atom, Pid> cmd when cmd.Item1 == "close":
+          this.runtime.Modules.File.Close(this.fileHandle);
+          this.runtime.Send(cmd.Item2, this.runtime.MakeAtom("ok"));
           break;
       }
       return ctx.NoReply();

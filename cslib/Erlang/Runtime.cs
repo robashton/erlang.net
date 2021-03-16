@@ -133,6 +133,7 @@ namespace CsLib.Erlang
       if(t == typeof(Pid)) { return this.MakePid((Pid)obj); }
       if(t == typeof(ErlNifTerm)) { return (ErlNifTerm)obj; }
       if(t == typeof(ErlangCallback)) { return MakeObjectReference(obj); }
+      if(t == typeof(Object[])) { return MakeList(((Object[])(obj)).Select(o => ExportAuto(o)).ToArray()); }
 
       if(t.IsTuple()) {
         ITuple tuple = (ITuple)obj;
