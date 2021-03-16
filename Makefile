@@ -16,7 +16,7 @@ priv/:
 	mkdir -p priv/
 
 
-c_src/%.o: c_src/%.cpp | priv/
+c_src/%.o: c_src/%.cpp c_src/*.h c_src/*.cpp | priv/
 	gcc -std=c++14 -c -I$(ERLDIR)/usr/include -I$(DOTNET_LOCATION) -o $@ $<
 
 priv/liberldotnet.so: c_src/dotnet.o c_src/dotnet_exports.o c_src/utils.o

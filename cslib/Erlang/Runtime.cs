@@ -57,6 +57,10 @@ namespace CsLib.Erlang
       return Imports.erldotnet_make_string(Env(), new StringBuilder(value));
     }
 
+    public ErlNifTerm MakeBinary(byte[] value) {
+      return Imports.erldotnet_make_binary(Env(), value.Length, value);
+    }
+
     public ErlNifTerm MakeTuple(ErlNifTerm[] terms) {
       return Imports.erldotnet_make_tuple(Env(), (uint)terms.Length, terms);
     }
@@ -122,6 +126,7 @@ namespace CsLib.Erlang
       if(t == typeof(Int32)) { return this.MakeInt((Int32)obj); }
       if(t == typeof(Int64)) { return this.MakeInt64((Int64)obj); }
       if(t == typeof(String)) { return this.MakeString((String)obj); }
+      if(t == typeof(byte[])) { return this.MakeBinary((byte[])obj); }
       if(t == typeof(Pid)) { return this.MakePid((Pid)obj); }
       if(t == typeof(ErlNifTerm)) { return (ErlNifTerm)obj; }
       if(t == typeof(ErlangCallback)) { return MakeObjectReference(obj); }
@@ -271,6 +276,9 @@ namespace CsLib.Erlang
 
         return method.Invoke(convertedArgs.ToArray());
       }
+      if(type == typeof(byte[])) {
+        return NativeToBinary(term);
+      }
       return null;
     }
 
@@ -291,18 +299,24 @@ namespace CsLib.Erlang
 
       if((length = Imports.erldotnet_string_or_atom_length(Env(), term)) > 0) {
         int allocLength = length + 1;
-
         IntPtr ptr = Marshal.AllocHGlobal(allocLength);
-
         Imports.erldotnet_term_to_string(Env(), ptr, (uint)allocLength, term);
-
         String str = Marshal.PtrToStringAnsi(ptr);
-
         Marshal.FreeHGlobal(ptr);
-
         return str;
       }
       return String.Empty;
+    }
+
+    public Byte[] NativeToBinary(ErlNifTerm term) {
+      int length = 0;
+      if((length = Imports.erldotnet_binary_length(Env(), term)) > 0) {
+        var ptr = Imports.erldotnet_binary_pointer(Env(), term);
+        var data = new byte[length];
+        Marshal.Copy(ptr, data, 0, length);
+        return data;
+      }
+      return new byte[] {};
     }
 
     public Int32 NativeToInt32(ErlNifTerm term) {

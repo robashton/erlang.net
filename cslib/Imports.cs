@@ -28,6 +28,9 @@ namespace CsLib.Erlang
     internal static extern ErlNifTerm erldotnet_make_string(ErlNifEnv env, StringBuilder value);
 
     [DllImport("erldotnet")]
+    internal static extern ErlNifTerm erldotnet_make_binary(ErlNifEnv env, int len, byte[] data);
+
+    [DllImport("erldotnet")]
     internal static extern ErlNifTerm erldotnet_make_tuple(ErlNifEnv env, uint len, ErlNifTerm[] terms);
 
     [DllImport("erldotnet")]
@@ -92,6 +95,12 @@ namespace CsLib.Erlang
 
     [DllImport("erldotnet")]
     internal static extern bool erldotnet_is_binary(ErlNifEnv env, ErlNifTerm value);
+
+    [DllImport("erldotnet")]
+    internal static extern int erldotnet_binary_length(ErlNifEnv env, ErlNifTerm value);
+
+    [DllImport("erldotnet")]
+    internal static extern IntPtr erldotnet_binary_pointer(ErlNifEnv env, ErlNifTerm value);
 
     [DllImport("erldotnet")]
     internal static extern bool erldotnet_is_pointer_resource(ErlNifEnv env, ErlNifTerm value);

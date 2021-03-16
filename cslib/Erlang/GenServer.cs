@@ -59,7 +59,6 @@ namespace CsLib.Erlang
         var msg = runtime.Coerce(args.Item1, msgType);
         var state = runtime.GetObjectReference(args.Item2);
         HandleInfoResult result = (HandleInfoResult)handleInfoInterface.GetMethod("HandleInfo").Invoke(state, new object[] { new HandleInfoContext(runtime, state),  msg });
-        Console.WriteLine("6");
 
         return result.Native;
       }; 

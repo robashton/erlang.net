@@ -18,7 +18,7 @@ ERL_NIF_TERM call_erlang_fn(ErlNifEnv* env, ERL_NIF_TERM mfa) {
 
   // We'll not release it, cos Erlang will think it's finished with as soon as the callback is invoked
   ERL_NIF_TERM resource = enif_make_resource(env, callback);
-
+  
   enif_send(env, &globals->owner, NULL, enif_make_tuple3(env,
         enif_make_atom(env, "call_fn"),
         mfa,
@@ -27,7 +27,7 @@ ERL_NIF_TERM call_erlang_fn(ErlNifEnv* env, ERL_NIF_TERM mfa) {
 
   // cheeky spin-wait on this being written in the nif:callback
   while(!callback->complete) {
-    sleep(1);
+    sleep(0);
   }
 
   // TODO: This probably needs copying into our env?

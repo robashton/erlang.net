@@ -46,15 +46,17 @@ handle_call(not_implemented, _From, State = #state{}) ->
 handle_cast(not_implemented, State) ->
   {noreply, State}.
 
-handle_info({call_fn, _Args ={ M, F, A }, Resource}, State = #state{ bridge = Bridge }) ->
+handle_info({call_fn, Args ={ M, F, A }, Resource}, State = #state{ bridge = Bridge }) ->
   Result = erlang:apply(M, F, A),
   ok = dotnet:callback(Bridge, Resource, Result),
   {noreply, State};
 
 handle_info(_Other, State = #state{ bridge = _Bridge }) ->
+  io:format(user, "What ~p~n", [ _Other ]),
   {noreply, State}.
 
 terminate(_Reason, _State) ->
+  io:format("wtf exit?? ~p ~n", [ _Reason ]),
   ok.
 
 code_change(_OldVsn, State, _Extra) ->
