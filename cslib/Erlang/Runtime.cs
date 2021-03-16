@@ -92,7 +92,7 @@ namespace CsLib.Erlang
     public ErlNifTerm MakeObjectReference(Object obj) {
       var handle = GCHandle.Alloc(obj);
       var ptr = GCHandle.ToIntPtr(handle);
-      return Imports.erldotnet_make_pointer_resource(Env(), &Bridge.Return, ptr);
+      return Imports.erldotnet_make_pointer_resource(Env(), (delegate* <IntPtr, void>)Marshal.GetFunctionPointerForDelegate(ReturnObjectReferenceInstance), ptr);
     }
 
     public Object GetObjectReference(ErlNifTerm c) {
@@ -100,6 +100,9 @@ namespace CsLib.Erlang
       var handle = GCHandle.FromIntPtr(ptr);
       return handle.Target;
     }
+
+    private delegate void ReturnObjectReference(IntPtr handle);
+    private ReturnObjectReference ReturnObjectReferenceInstance = (ptr) => GCHandle.FromIntPtr(ptr).Free();
 
     public void Send(Pid target, ErlNifTerm term) {
       Imports.erldotnet_send(Env(), target, term);

@@ -1,14 +1,13 @@
 using System;
 using CsLib.Erlang;
 using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Linq;
 using System.IO;
 
 namespace CsLib
 {
-
-
   public class Bridge {
     
     [StructLayout(LayoutKind.Sequential)]
@@ -24,14 +23,13 @@ namespace CsLib
     private delegate ErlNifTerm LoadAssemblyDelegate(ErlNifEnv env, IntPtr bridge, IntPtr assemblyName, IntPtr bridgeName);
     private delegate ErlNifTerm ErlangCallbackDelegate(ErlNifEnv nev, IntPtr bridge, ErlNifTerm callback, ErlNifTerm args);
 
-
     Runtime runtime;
     IApp running_app;
 
     ReturnDelegate @return;
     LoadAssemblyDelegate load_assembly;
     ErlangCallbackDelegate erlang_callback;
-
+    
     private Bridge(Runtime runtime) {
       this.runtime = runtime;
     }
@@ -57,7 +55,10 @@ namespace CsLib
       Runtime runtime = new Runtime();
       Bridge instance = new Bridge(runtime);
 
-      // If we don't stash the delegates to our static functions on the gcroot, they get cleared up (lol)
+      // If we don't stash the delegates to our static functions on the gcroot, they get cleared up before we're done (lol)
+      // and if we try and use function pointers to static functions with 'unmanagedcallersonly', we get 
+      // PAL_SEHException, so this long-winded method is all I can really be bothered with because I'm not 
+      // downloading the .NET core symbols and fighting the use of them on nixos just to get to the bottom of it
       instance.@return = Return;
       instance.load_assembly = LoadAssemblyWrapper;
       instance.erlang_callback = ErlangCallbackWrapper;
@@ -70,6 +71,7 @@ namespace CsLib
       args->@return = (delegate* <IntPtr, ErlNifTerm>)Marshal.GetFunctionPointerForDelegate(instance.@return);
       args->load_assembly = (delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm>) Marshal.GetFunctionPointerForDelegate(instance.load_assembly);
       args->erlang_callback = (delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm>) Marshal.GetFunctionPointerForDelegate(instance.erlang_callback);
+
       return 0;
     }
 
@@ -83,7 +85,7 @@ namespace CsLib
       return res;
     }
 
-    public static ErlNifTerm Return(IntPtr hptr) {
+    internal static ErlNifTerm Return(IntPtr hptr) {
       GCHandle.FromIntPtr(hptr).Free();
       return ErlNifTerm.Zero;
     }
