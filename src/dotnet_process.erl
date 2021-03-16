@@ -1,10 +1,10 @@
--module(dotnetprocess).
+-module(dotnet_process).
 
 -export([ init/1 ]).
 
 init(Callback) ->
   spawn_link(fun() ->
-                 { ok, Bridge } = dotnethost_bridge:get_bridge(),
+                 { ok, Bridge } = dotnet_host_bridge:get_bridge(),
                  Result = dotnet:erlang_callback(Bridge, Callback, undefined),
                  loop(Bridge, Result)
              end).

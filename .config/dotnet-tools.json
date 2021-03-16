@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "dotnet-symbol": {
+      "version": "1.0.212301",
+      "commands": [
+        "dotnet-symbol"
+      ]
+    }
+  }
+}

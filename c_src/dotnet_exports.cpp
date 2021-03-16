@@ -35,6 +35,13 @@ extern "C" ERL_NIF_TERM erldotnet_make_string(ErlNifEnv* env, const char* value)
   return enif_make_string(env, value, ERL_NIF_LATIN1);
 }
 
+extern "C" ERL_NIF_TERM erldotnet_make_binary(ErlNifEnv* env, size_t length, const char* value) {
+  ErlNifBinary bin;
+  enif_alloc_binary(length, &bin);
+  memcpy(bin.data, value, length);
+  return enif_make_binary(env, &bin);
+}
+
 extern "C" ERL_NIF_TERM erldotnet_make_tuple(ErlNifEnv* env, uint32_t length, ERL_NIF_TERM terms[]) {
   return enif_make_tuple_from_array(env, terms, length);
 }
@@ -168,6 +175,22 @@ extern "C" uint8_t erldotnet_is_string(ErlNifEnv* env,  ERL_NIF_TERM term) {
   char buffer[len +  1];
   if(enif_get_string(env, term, buffer, len + 1, ERL_NIF_LATIN1) <= 0) { return false; }
   return true;
+}
+
+extern "C" uint8_t erldotnet_is_binary(ErlNifEnv* env, ERL_NIF_TERM term) {
+  return enif_is_binary(env, term);
+}
+
+extern "C" size_t erldotnet_binary_length(ErlNifEnv* env, ERL_NIF_TERM term) {
+  ErlNifBinary bin;
+  enif_inspect_binary(env, term, &bin);
+  return bin.size;
+}
+
+extern "C" void* erldotnet_binary_pointer(ErlNifEnv* env, ERL_NIF_TERM term) {
+  ErlNifBinary bin;
+  enif_inspect_binary(env, term, &bin);
+  return bin.data;
 }
 
 extern "C" int erldotnet_string_or_atom_length(ErlNifEnv* env, ERL_NIF_TERM term) {

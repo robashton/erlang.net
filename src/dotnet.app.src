@@ -8,7 +8,7 @@
                   kernel,
                   stdlib
                  ]},
-  {mod, {dotnethost_app, []}},
+  {mod, {dotnet_host_app, []}},
   {modules, []},
   {env, []}
  ]}.

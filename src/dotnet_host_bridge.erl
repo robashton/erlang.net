@@ -1,4 +1,4 @@
--module(dotnethost_bridge).
+-module(dotnet_host_bridge).
 
 -behaviour(gen_server).
 
@@ -31,6 +31,7 @@ start_link(HostFxr) ->
 init([HostFxr]) ->
   process_flag(trap_exit, true),
 
+
   {ok, Bridge} = dotnet:create_bridge(HostFxr),
 
   ets:new(control, [set, protected, named_table]),
@@ -46,15 +47,23 @@ handle_call(not_implemented, _From, State = #state{}) ->
 handle_cast(not_implemented, State) ->
   {noreply, State}.
 
-handle_info({call_fn, _Args ={ M, F, A }, Resource}, State = #state{ bridge = Bridge }) ->
+handle_info({call_fn, Args ={ M, F, A }, Resource}, State = #state{ bridge = Bridge }) ->
   Result = erlang:apply(M, F, A),
   ok = dotnet:callback(Bridge, Resource, Result),
   {noreply, State};
 
+handle_info({'EXIT', _, normal}, State = #state{ bridge = _Bridge }) ->
+  {noreply, State};
+
 handle_info(_Other, State = #state{ bridge = _Bridge }) ->
+  io:format(user, "What ~p~n", [ _Other ]),
   {noreply, State}.
 
+terminate(normal, _State) ->
+  ok;
+
 terminate(_Reason, _State) ->
+  io:format("wtf exit?? ~p ~n", [ _Reason ]),
   ok.
 
 code_change(_OldVsn, State, _Extra) ->

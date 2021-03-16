@@ -230,8 +230,8 @@ static ErlNifFunc nif_funcs[] =
   {"load_hostfxr_impl", 1, load_hostfxr},
   {"create_bridge", 1, create_bridge},
   {"run_app_from_assembly", 3, run_app_from_assembly, ERL_NIF_DIRTY_JOB_CPU_BOUND},
-  {"callback", 3, callback},
-  {"erlang_callback", 3, erlang_callback},
+  {"callback", 3, callback, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+  {"erlang_callback", 3, erlang_callback, ERL_NIF_DIRTY_JOB_CPU_BOUND},
 };
 
 ERL_NIF_INIT(dotnet,

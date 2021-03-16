@@ -1,8 +1,10 @@
 using System;
 using CsLib;
+using System.Runtime.InteropServices;
 
 namespace CsLib.Erlang
 {
+  [StructLayout(LayoutKind.Sequential)]
   public readonly struct ErlNifEnv
   {
     public static readonly ErlNifEnv Zero = new ErlNifEnv(IntPtr.Zero);

@@ -5,17 +5,17 @@
 -define(test_assembly, "priv/testimpl.dll").
 -define(single_process_app, "TestImpl.Tests.SingleProcessApp").
 
--export([tests/1]).
+-export([tests/0]).
 
-tests(Bridge) ->
+tests() ->
   [
    { <<"Run an app from an assembly">>,
-     fun() ->
+     fun(Bridge) ->
          { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?single_process_app),
          ?assert(is_pid(Pid))
      end },
    { <<"Send a message and receive a message from a C# process">>,
-     fun() ->
+     fun(Bridge) ->
          { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?single_process_app),
          Pid ! { send_me, self(), hi },
          receive
@@ -23,7 +23,7 @@ tests(Bridge) ->
          end
      end },
    { <<"Send a message to a C# process that sits in a message loop">>,
-     fun() ->
+     fun(Bridge) ->
          { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?single_process_app),
          Pid ! { send_me, self(), hi },
          Pid ! { send_me, self(), hi2 },
@@ -35,7 +35,7 @@ tests(Bridge) ->
          end
      end },
    { <<"A C# process that terminates when the message loop ends">>,
-     fun() ->
+     fun(Bridge) ->
          { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?single_process_app),
          Reference = erlang:monitor(process, Pid),
          Pid ! bye,
