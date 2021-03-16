@@ -5,13 +5,13 @@
 -define(test_assembly, "priv/testimpl.dll").
 -define(genserver_app, "TestImpl.Tests.CodeApp").
 
--export([tests/1]).
+-export([tests/0]).
 
-tests(Bridge) ->
-  { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+tests() ->
   [
    { <<"Write a file using the Erlang API">>,
-     fun() ->
+     fun(Bridge) ->
+         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
          Filename = temp_filename(),
          Pid ! { write, self(), Filename, <<"hello world">> },
          receive

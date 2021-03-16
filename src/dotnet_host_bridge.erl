@@ -31,6 +31,7 @@ start_link(HostFxr) ->
 init([HostFxr]) ->
   process_flag(trap_exit, true),
 
+
   {ok, Bridge} = dotnet:create_bridge(HostFxr),
 
   ets:new(control, [set, protected, named_table]),
@@ -51,9 +52,15 @@ handle_info({call_fn, Args ={ M, F, A }, Resource}, State = #state{ bridge = Bri
   ok = dotnet:callback(Bridge, Resource, Result),
   {noreply, State};
 
+handle_info({'EXIT', _, normal}, State = #state{ bridge = _Bridge }) ->
+  {noreply, State};
+
 handle_info(_Other, State = #state{ bridge = _Bridge }) ->
   io:format(user, "What ~p~n", [ _Other ]),
   {noreply, State}.
+
+terminate(normal, _State) ->
+  ok;
 
 terminate(_Reason, _State) ->
   io:format("wtf exit?? ~p ~n", [ _Reason ]),

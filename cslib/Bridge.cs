@@ -7,19 +7,30 @@ using System.IO;
 
 namespace CsLib
 {
-  [StructLayout(LayoutKind.Sequential)]
-  public unsafe struct CreateArgs
-  {
-    public IntPtr handle;
-    public delegate* <IntPtr, ErlNifTerm> @return;
-    public delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm> load_assembly;
-    public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> erlang_callback;
-  }
+
 
   public class Bridge {
+    
+    [StructLayout(LayoutKind.Sequential)]
+    private unsafe struct CreateArgs
+    {
+      public IntPtr handle;
+      public delegate* <IntPtr, ErlNifTerm> @return;
+      public delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm> load_assembly;
+      public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> erlang_callback;
+    }
+
+    private delegate ErlNifTerm ReturnDelegate(IntPtr handle);
+    private delegate ErlNifTerm LoadAssemblyDelegate(ErlNifEnv env, IntPtr bridge, IntPtr assemblyName, IntPtr bridgeName);
+    private delegate ErlNifTerm ErlangCallbackDelegate(ErlNifEnv nev, IntPtr bridge, ErlNifTerm callback, ErlNifTerm args);
+
 
     Runtime runtime;
     IApp running_app;
+
+    ReturnDelegate @return;
+    LoadAssemblyDelegate load_assembly;
+    ErlangCallbackDelegate erlang_callback;
 
     private Bridge(Runtime runtime) {
       this.runtime = runtime;
@@ -46,14 +57,19 @@ namespace CsLib
       Runtime runtime = new Runtime();
       Bridge instance = new Bridge(runtime);
 
+      // If we don't stash the delegates to our static functions on the gcroot, they get cleared up (lol)
+      instance.@return = Return;
+      instance.load_assembly = LoadAssemblyWrapper;
+      instance.erlang_callback = ErlangCallbackWrapper;
+
       // If you Console.WriteLine before this, you'll break the erlang shell
       Console.SetOut(new PrintFWriter(runtime));
 
       var handle = GCHandle.Alloc(instance);
       args->handle = GCHandle.ToIntPtr(handle);
-      args->@return = &Return;
-      args->load_assembly = &LoadAssemblyWrapper;
-      args->erlang_callback = &ErlangCallbackWrapper;
+      args->@return = (delegate* <IntPtr, ErlNifTerm>)Marshal.GetFunctionPointerForDelegate(instance.@return);
+      args->load_assembly = (delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm>) Marshal.GetFunctionPointerForDelegate(instance.load_assembly);
+      args->erlang_callback = (delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm>) Marshal.GetFunctionPointerForDelegate(instance.erlang_callback);
       return 0;
     }
 
