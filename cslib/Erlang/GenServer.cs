@@ -49,6 +49,10 @@ namespace CsLib.Erlang
                                          .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IHandleCall<>))
                                          .FirstOrDefault();
 
+      var handleCastInterface = typeof(T).GetInterfaces()
+                                         .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IHandleCast<>))
+                                         .FirstOrDefault();
+
       ErlangCallback initCallback = (Runtime runtime, ErlNifTerm obj) => {
         var result = init(new GenInitContext<T>(runtime));
         return result.Native;
@@ -78,9 +82,20 @@ namespace CsLib.Erlang
         return result.Native;
       }; 
 
+      ErlangCallback handleCastCallback = (Runtime runtime, ErlNifTerm input) => {
+        var args = runtime.Coerce<Tuple<ErlNifTerm, ErlNifTerm>>(input);
+        var msgType = handleCastInterface.GetGenericArguments()[0];
+        var msg = runtime.Coerce(args.Item1, msgType);
+        var state = runtime.GetObjectReference(args.Item2);
+        HandleCastResult result = (HandleCastResult)handleCastInterface.GetMethod("HandleCast").Invoke(state, new object[] { new HandleCastContext(runtime, state),  msg });
+
+        return result.Native;
+      }; 
+
       var callbacks = new DotNetGenServerArgs { Init = initCallback
                                               , HandleInfo = handleInfoInterface == null ? null : handleInfoCallback
                                               , HandleCall = handleCallInterface == null ? null : handleCallCallback
+                                              , HandleCast = handleCastInterface == null ? null : handleCastCallback
       };
 
       return runtime.Modules.DotnetGenserver.StartLink(callbacks); 
@@ -92,6 +107,7 @@ namespace CsLib.Erlang
     public ErlangCallback Init { get; init; }
     public ErlangCallback HandleInfo { get; init; }
     public ErlangCallback HandleCall { get; init; }
+    public ErlangCallback HandleCast { get; init; }
   }
 
   public class GenResult {
@@ -157,6 +173,29 @@ namespace CsLib.Erlang
 
   public interface IHandleInfo<Msg> {
     HandleInfoResult HandleInfo(HandleInfoContext context, Msg msg);
+  }
+
+  public sealed class HandleCastResult : GenResult 
+  {
+    internal HandleCastResult(ErlNifTerm term) : base(term) {}
+  }
+
+  public sealed class HandleCastContext {
+    Runtime runtime;
+    Object genserver;
+
+    internal HandleCastContext(Runtime runtime, Object genserver) {
+      this.runtime = runtime;
+      this.genserver = genserver;
+    }
+
+    public HandleCastResult NoReply() {
+      return new HandleCastResult(runtime.MakeTuple2(runtime.MakeAtom("noreply"), runtime.MakeObjectReference(genserver)));
+    }
+  }
+
+  public interface IHandleCast<Msg> {
+    HandleCastResult HandleCast(HandleCastContext context, Msg msg);
   }
 
 }

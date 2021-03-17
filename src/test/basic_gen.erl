@@ -41,5 +41,21 @@ tests() ->
          { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
          Result = gen_server:call(Pid, "hi"),
          ?assertEqual("boobs", Result)
+     end },
+   { <<"Send a message to the handle_info of a gen server">>,
+     fun(Bridge) ->
+         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+         gen_server:cast(Pid, {"hello bob", self()}),
+         receive
+           Msg -> ?assertEqual("hello joe", Msg)
+         end
+     end },
+   { <<"Send a different message to the handle_info of a gen server">>,
+     fun(Bridge) ->
+         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+         gen_server:cast(Pid, {"hi", self()}),
+         receive
+           Msg -> ?assertEqual("boobs", Msg)
+         end
      end }
   ].

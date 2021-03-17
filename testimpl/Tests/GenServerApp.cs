@@ -10,6 +10,8 @@ namespace TestImpl.Tests
 
   public class MyGenServer : IHandleInfo<InfoMsg>
                            , IHandleCall<CallMsg>
+                           , IHandleCast<InfoMsg>
+                          
   {
     Runtime runtime;
 
@@ -18,14 +20,12 @@ namespace TestImpl.Tests
     }
 
     public HandleInfoResult HandleInfo(HandleInfoContext ctx, InfoMsg msg) {
-      switch(msg) {
-        case ( "hello bob", _ ): 
-          runtime.Send(msg.Item2, runtime.ExportAuto("hello joe"));
-          break;
-        case ( _, _ ): 
-          runtime.Send(msg.Item2, runtime.ExportAuto("boobs"));
-          break;
-      }
+      HandleInfoImpl(msg);
+      return ctx.NoReply();
+    }
+
+    public HandleCastResult HandleCast(HandleCastContext ctx, InfoMsg msg) {
+      HandleInfoImpl(msg);
       return ctx.NoReply();
     }
 
@@ -36,7 +36,18 @@ namespace TestImpl.Tests
         default: 
           return ctx.Reply("boobs");
       }
-      return ctx.Reply("ohno");
+    }
+
+
+    private void HandleInfoImpl(InfoMsg msg) {
+      switch(msg) {
+        case ( "hello bob", _ ): 
+          runtime.Send(msg.Item2, runtime.ExportAuto("hello joe"));
+          break;
+        case ( _, _ ): 
+          runtime.Send(msg.Item2, runtime.ExportAuto("boobs"));
+          break;
+      }
     }
   }
 

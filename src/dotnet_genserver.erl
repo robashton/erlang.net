@@ -5,6 +5,7 @@
 -export([ init/1
         , handle_info/2
         , handle_call/3
+        , handle_cast/2
         ]).
 
 -record(state,
@@ -12,6 +13,7 @@
         , ref :: reference()
         , handle_info :: undefined | reference()
         , handle_call :: undefined | reference()
+        , handle_cast :: undefined | reference()
         }).
 
 start_link(Callbacks) ->
@@ -20,6 +22,7 @@ start_link(Callbacks) ->
 init([#{ init := Init
        , handleinfo := HandleInfo
        , handlecall := HandleCall
+       , handlecast := HandleCast
        }]) ->
   {ok ,Bridge } = dotnet_host_bridge:get_bridge(),
   case dotnet:erlang_callback(Bridge, Init, []) of
@@ -28,6 +31,7 @@ init([#{ init := Init
                    , ref = Ref
                    , handle_info = HandleInfo
                    , handle_call = HandleCall
+                   , handle_cast = HandleCast
                    } }
   end.
 
@@ -56,4 +60,17 @@ handle_call(Msg, ReplyTo, State = #state { handle_call = HandleCall
   case dotnet:erlang_callback(Bridge, HandleCall, { Msg, ReplyTo, Ref }) of
     { reply, Result, Ref2 } ->
       { reply, Result, State#state { ref = Ref2 } }
+  end.
+
+handle_cast(Msg, State = #state { handle_cast = undefined }) ->
+  io:format(user, ".NET gen server received message ~p but no handle_cast implemented ~n", [ Msg ]),
+  { noreply, State };
+
+handle_cast(Msg, State = #state { handle_cast = HandleInfo
+                                , bridge = Bridge
+                                , ref = Ref
+                                }) ->
+  case dotnet:erlang_callback(Bridge, HandleInfo, { Msg, Ref }) of
+    { noreply, Ref2 } ->
+      { noreply, State#state { ref = Ref2 } }
   end.
