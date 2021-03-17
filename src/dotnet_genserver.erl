@@ -6,6 +6,7 @@
         , handle_info/2
         , handle_call/3
         , handle_cast/2
+        , terminate/2
         ]).
 
 -record(state,
@@ -14,6 +15,7 @@
         , handle_info :: undefined | reference()
         , handle_call :: undefined | reference()
         , handle_cast :: undefined | reference()
+        , terminate :: undefined | reference()
         }).
 
 start_link(Callbacks) ->
@@ -23,6 +25,7 @@ init([#{ init := Init
        , handleinfo := HandleInfo
        , handlecall := HandleCall
        , handlecast := HandleCast
+       , terminate := Terminate
        }]) ->
   {ok ,Bridge } = dotnet_host_bridge:get_bridge(),
   case dotnet:erlang_callback(Bridge, Init, []) of
@@ -32,6 +35,7 @@ init([#{ init := Init
                    , handle_info = HandleInfo
                    , handle_call = HandleCall
                    , handle_cast = HandleCast
+                   , terminate = Terminate
                    } }
   end.
 
@@ -74,3 +78,9 @@ handle_cast(Msg, State = #state { handle_cast = HandleInfo
     { noreply, Ref2 } ->
       { noreply, State#state { ref = Ref2 } }
   end.
+
+terminate(_Reason, _State = #state { terminate = undefined }) ->
+  ok;
+
+terminate(Reason, _State = #state { bridge = Bridge, terminate = Terminate, ref = Ref }) ->
+  dotnet:erlang_callback(Bridge, Terminate, { Reason, Ref }).

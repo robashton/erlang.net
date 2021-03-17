@@ -3,7 +3,7 @@ using CsLib;
 using CsLib.Erlang;
 
 using InfoMsg = System.Tuple<System.String, CsLib.Erlang.Pid>;
-using CallMsg = System.String;
+using CallMsg = System.Object;
 
 namespace TestImpl.Tests
 {
@@ -11,9 +11,11 @@ namespace TestImpl.Tests
   public class MyGenServer : IHandleInfo<InfoMsg>
                            , IHandleCall<CallMsg>
                            , IHandleCast<InfoMsg>
+                           , ITerminate
                           
   {
     Runtime runtime;
+    Pid owner = Pid.Zero;
 
     public MyGenServer(Runtime runtime) {
       this.runtime = runtime;
@@ -29,15 +31,24 @@ namespace TestImpl.Tests
       return ctx.NoReply();
     }
 
-    public HandleCallResult HandleCall(HandleCallContext ctx, CallMsg msg) {
+    public HandleCallResult HandleCall(HandleCallContext ctx, Object msg) {
       switch(msg) {
         case "hello bob": 
           return ctx.Reply("hello joe");
+        case Tuple<String, Pid> t when t.Item1 == "store": 
+          this.owner = t.Item2;
+          return ctx.Reply(new Atom("ok"));
         default: 
           return ctx.Reply("boobs");
       }
     }
 
+    public TerminateResult Terminate(TerminateContext ctx, Atom reason) {
+      if(this.owner.HasValue) {
+        this.runtime.Send(this.owner, runtime.MakeAtom("bye"));
+      }
+      return ctx.Ok();
+    }
 
     private void HandleInfoImpl(InfoMsg msg) {
       switch(msg) {

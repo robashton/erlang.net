@@ -57,5 +57,14 @@ tests() ->
          receive
            Msg -> ?assertEqual("boobs", Msg)
          end
+     end },
+   { <<"Stop a gen server and invoke the terminate handler">>,
+     fun(Bridge) ->
+         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+         gen_server:call(Pid, {"store", self()}),
+         gen_server:stop(Pid),
+         receive
+           Msg -> ?assertEqual(bye, Msg)
+         end
      end }
   ].
