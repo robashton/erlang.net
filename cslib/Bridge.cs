@@ -52,8 +52,8 @@ namespace CsLib
 
       CreateArgs* args = (CreateArgs*)ptr;
 
-      Runtime runtime = new Runtime();
-      Bridge instance = new Bridge(runtime);
+      Runtime runtime = new ();
+      Bridge instance = new (runtime);
 
       // If we don't stash the delegates to our static functions on the gcroot, they get cleared up before we're done (lol)
       // and if we try and use function pointers to static functions with 'unmanagedcallersonly', we get 

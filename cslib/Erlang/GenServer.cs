@@ -17,7 +17,7 @@ namespace CsLib.Erlang
     }
 
     public GenInitResult Ok(T state) {
-      return new GenInitResult(runtime.MakeTuple2(
+      return new (runtime.MakeTuple2(
             runtime.MakeAtom("ok"),
             runtime.MakeObjectReference(state))); 
     }
@@ -173,7 +173,7 @@ namespace CsLib.Erlang
     }
 
     public HandleInfoResult NoReply() {
-      return new HandleInfoResult(runtime.MakeTuple2(runtime.MakeAtom("noreply"), runtime.MakeObjectReference(genserver)));
+      return new (runtime.MakeTuple2(runtime.MakeAtom("noreply"), runtime.MakeObjectReference(genserver)));
     }
   }
 
@@ -187,7 +187,7 @@ namespace CsLib.Erlang
     }
 
     public HandleCastResult NoReply() {
-      return new HandleCastResult(runtime.MakeTuple2(runtime.MakeAtom("noreply"), runtime.MakeObjectReference(genserver)));
+      return new (runtime.MakeTuple2(runtime.MakeAtom("noreply"), runtime.MakeObjectReference(genserver)));
     }
   }
 
@@ -209,7 +209,7 @@ namespace CsLib.Erlang
     }
 
     public HandleCallResult Reply(ErlNifTerm result) {
-      return new HandleCallResult(runtime.MakeTuple3(
+      return new (runtime.MakeTuple3(
               runtime.MakeAtom("reply"),
               result,
               runtime.MakeObjectReference(genserver)));
@@ -224,7 +224,7 @@ namespace CsLib.Erlang
     }
 
     public TerminateResult Ok() {
-      return new TerminateResult(runtime.MakeAtom("ok"));
+      return new (runtime.MakeAtom("ok"));
     }
   }
 

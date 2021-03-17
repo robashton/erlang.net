@@ -13,7 +13,7 @@ namespace CsLib.Erlang
 
   public unsafe sealed class Runtime
   {
-    private static ThreadLocal<ErlNifEnv> env = new ThreadLocal<ErlNifEnv>();
+    private static ThreadLocal<ErlNifEnv> env = new();
 
     public dynamic Modules
     { 
@@ -38,11 +38,11 @@ namespace CsLib.Erlang
     }
 
     public ErlNifTerm WriteDebug(String value) {
-      return Imports.erldotnet_write_debug(Env(), new StringBuilder(value));
+      return Imports.erldotnet_write_debug(Env(), new (value));
     }
 
     public ErlNifTerm MakeAtom(String value) {
-      return Imports.erldotnet_make_atom(Env(), new StringBuilder(value));
+      return Imports.erldotnet_make_atom(Env(), new (value));
     }
 
     public ErlNifTerm MakeInt(Int32 value) {
@@ -54,7 +54,7 @@ namespace CsLib.Erlang
     }
 
     public ErlNifTerm MakeString(String value) {
-      return Imports.erldotnet_make_string(Env(), new StringBuilder(value));
+      return Imports.erldotnet_make_string(Env(), new (value));
     }
 
     public ErlNifTerm MakeBinary(byte[] value) {

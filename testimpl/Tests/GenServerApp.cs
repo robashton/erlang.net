@@ -12,7 +12,6 @@ namespace TestImpl.Tests
                            , IHandleCall<CallMsg>
                            , IHandleCast<InfoMsg>
                            , ITerminate
-                          
   {
     Runtime runtime;
     Pid owner = Pid.Zero;
@@ -39,7 +38,7 @@ namespace TestImpl.Tests
           this.owner = t.Item2;
           return ctx.Reply(new Atom("ok"));
         default: 
-          return ctx.Reply("boobs");
+          return ctx.Reply("nope");
       }
     }
 

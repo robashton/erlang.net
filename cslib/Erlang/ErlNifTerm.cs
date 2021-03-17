@@ -7,7 +7,7 @@ namespace CsLib.Erlang
   [StructLayout(LayoutKind.Sequential)]
   public readonly struct ErlNifTerm
   {
-    public static readonly ErlNifTerm Zero = new ErlNifTerm(IntPtr.Zero);
+    public static readonly ErlNifTerm Zero = new (IntPtr.Zero);
 
     internal readonly IntPtr inner;
 
