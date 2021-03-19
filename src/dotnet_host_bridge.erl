@@ -55,7 +55,7 @@ handle_info({call_fn, Caller, Args, Resource}, State = #state{ bridge = Bridge, 
                  Worker ! { call_fn, Args, Resource },
                  State;
                error ->
-                 Pid = spawn_link(fun dispatch_loop/0),
+                 Pid = spawn_link(fun() -> dispatch_loop(Caller) end),
                  Pid ! { call_fn, Args, Resource },
                  erlang:monitor(process, Caller),
                  State#state { caller_pool = maps:put(Caller, Pid, CallerPool) }
@@ -65,7 +65,7 @@ handle_info({call_fn, Caller, Args, Resource}, State = #state{ bridge = Bridge, 
 handle_info({'DOWN', _, _, Caller, _ }, State = #state{ caller_pool = CallerPool }) ->
   NewState = case maps:find(Caller, CallerPool) of
                {ok, Worker} ->
-                 Worker ! stop,
+                 Worker ! '$$stop',
                  State#state { caller_pool = maps:remove(Caller, CallerPool) };
                error ->
                  io:format(user, "Somehow received a monitor down for a caller that we don't know about?? ~n", []),
@@ -90,12 +90,13 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
-dispatch_loop() ->
+dispatch_loop(Owner) ->
   receive
     { call_fn, { M, F, A }, Resource } ->
       { ok, Bridge } = get_bridge(),
       Result = erlang:apply(M, F, A),
       dotnet:callback(Bridge, Resource, Result),
       dispatch_loop();
-    stop -> ok
+    '$$stop' -> ok;
+    Other -> Owner ! Other
   end.
