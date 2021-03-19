@@ -20,6 +20,7 @@
 -record(state, { host_fxr :: term()
                , bridge :: term()
                , app :: term()
+               , caller_pool :: maps:map(pid(), pid())
                }).
 get_bridge() ->
   [{ bridge, Bridge }] = ets:lookup(control, bridge),
@@ -39,6 +40,7 @@ init([HostFxr]) ->
 
   {ok, #state{ host_fxr = HostFxr
              , bridge = Bridge
+             , caller_pool = maps:new()
              }}.
 
 handle_call(not_implemented, _From, State = #state{}) ->
@@ -47,10 +49,20 @@ handle_call(not_implemented, _From, State = #state{}) ->
 handle_cast(not_implemented, State) ->
   {noreply, State}.
 
-handle_info({call_fn, Args ={ M, F, A }, Resource}, State = #state{ bridge = Bridge }) ->
-  Result = erlang:apply(M, F, A),
-  ok = dotnet:callback(Bridge, Resource, Result),
-  {noreply, State};
+handle_info({call_fn, Caller, Args, Resource}, State = #state{ bridge = Bridge, caller_pool = CallerPool }) ->
+  NewState = case maps:find(Caller, CallerPool) of
+               {ok, Worker} ->
+                 Worker ! { call_fn, Args, Resource },
+                 State;
+               error ->
+
+                 %% TODO: Add monitor..
+                 Pid = spawn_link(fun dispatch_loop/0),
+                 Pid ! { call_fn, Args, Resource },
+
+                 State#state { caller_pool = maps:put(Caller, Pid, CallerPool) }
+             end,
+  {noreply, NewState};
 
 handle_info({'EXIT', _, normal}, State = #state{ bridge = _Bridge }) ->
   {noreply, State};
@@ -69,3 +81,11 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
+dispatch_loop() ->
+  receive
+    { call_fn, { M, F, A }, Resource } ->
+      { ok, Bridge } = get_bridge(),
+      Result = erlang:apply(M, F, A),
+      dotnet:callback(Bridge, Resource, Result),
+      dispatch_loop()
+  end.

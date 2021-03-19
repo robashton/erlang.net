@@ -18,9 +18,12 @@ ERL_NIF_TERM call_erlang_fn(ErlNifEnv* env, ERL_NIF_TERM mfa) {
 
   // We'll not release it, cos Erlang will think it's finished with as soon as the callback is invoked
   ERL_NIF_TERM resource = enif_make_resource(env, callback);
+  ErlNifPid self;
+  enif_self(env, &self);
   
-  enif_send(env, &globals->owner, NULL, enif_make_tuple3(env,
+  enif_send(env, &globals->owner, NULL, enif_make_tuple4(env,
         enif_make_atom(env, "call_fn"),
+        enif_make_pid(env, &self),
         mfa,
         resource)
       );

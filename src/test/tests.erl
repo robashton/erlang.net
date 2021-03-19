@@ -13,6 +13,7 @@ all_test_() ->
                           , basic_gen:tests()
                           , dotnet_code:tests()
                           , named_gen_servers:tests()
+                          , supervisors:tests()
                           ])).
 
 create_host() ->

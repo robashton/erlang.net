@@ -13,8 +13,8 @@ namespace CsLib.Erlang
       runtime.Modules.GenServer.Stop(pid);
     }
 
-    public static Pid StartLink<T>(Runtime runtime, Atom name, Func<T> init)  {
-      return StartLinkInternal(runtime, Tuple.Create(new Atom("local"), name), init);
+    public static Pid StartLink<T>(Runtime runtime, String name, Func<T> init)  {
+      return StartLinkInternal(runtime, Tuple.Create(new Atom("local"), new Atom(name)), init);
     }
     
     public static Pid StartLink<T>(Runtime runtime, Func<T> init) 

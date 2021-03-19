@@ -32,6 +32,7 @@ tests() ->
          receive
            Result ->
              {ok, Data } = file:read_file(Filename),
+             file:delete(Filename),
              ?assertEqual(ok, Result),
              ?assertEqual(<<"bloboneblobtwo">>, Data)
          end
