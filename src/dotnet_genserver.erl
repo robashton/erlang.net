@@ -1,6 +1,8 @@
 -module(dotnet_genserver).
 
--export([ start_link/1 ]).
+-export([ start_link/1
+        , start_link/2
+        ]).
 
 -export([ init/1
         , handle_info/2
@@ -21,13 +23,16 @@
 start_link(Callbacks) ->
   gen_server:start_link(?MODULE, [Callbacks], []).
 
+start_link(Name, Callbacks) ->
+  gen_server:start_link(Name, ?MODULE, [Callbacks], []).
+
 init([#{ init := Init
        , handleinfo := HandleInfo
        , handlecall := HandleCall
        , handlecast := HandleCast
        , terminate := Terminate
        }]) ->
-  {ok ,Bridge } = dotnet_host_bridge:get_bridge(),
+  {ok, Bridge } = dotnet_host_bridge:get_bridge(),
   case dotnet:erlang_callback(Bridge, Init, []) of
     { ok, Ref } ->
       { ok, #state { bridge = Bridge

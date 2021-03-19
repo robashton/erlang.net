@@ -120,7 +120,7 @@ namespace CsLib
 
         var term = this.running_app.Start(this.runtime);
 
-        return this.runtime.ExportAuto(term);
+        return this.runtime.MakeTuple2(this.runtime.MakeAtom("ok"), this.runtime.ExportAuto(term));
       }
       // I think I just need to do this or we're going to end up with exceptions bubbling up into C
       // and we'll end up leaking shit all over the place

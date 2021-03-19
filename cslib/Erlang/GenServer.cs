@@ -8,7 +8,21 @@ using System.Runtime.InteropServices;
 namespace CsLib.Erlang
 {
   public sealed class GenServer {
-    public static Object StartLink<T>(Runtime runtime, Func<T> init) 
+
+    public static void Stop(Runtime runtime, Pid pid) {
+      runtime.Modules.GenServer.Stop(pid);
+    }
+
+    public static Pid StartLink<T>(Runtime runtime, Atom name, Func<T> init)  {
+      return StartLinkInternal(runtime, Tuple.Create(new Atom("local"), name), init);
+    }
+    
+    public static Pid StartLink<T>(Runtime runtime, Func<T> init) 
+    {
+      return StartLinkInternal(runtime, null, init);
+    }
+
+    private static Pid StartLinkInternal<T>(Runtime runtime, Object name, Func<T> init) 
     {
       var handleInfoInterface = typeof(T).GetInterfaces()
                                          .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IHandleInfo<>))
@@ -76,8 +90,23 @@ namespace CsLib.Erlang
                                               , HandleCast = handleCastInterface == null ? null : handleCastCallback
                                               , Terminate = terminateInterface == null ? null : terminateCallback
       };
+      
+      Object result;
 
-      return runtime.Modules.DotnetGenserver.StartLink(callbacks); 
+      if(name != null) {
+        result = runtime.Modules.DotnetGenserver.StartLink(name, callbacks);
+      } else {
+        result = runtime.Modules.DotnetGenserver.StartLink(callbacks);
+      }
+
+      switch(result) {
+        case Tuple<Atom, Pid> success: 
+          return success.Item2;
+        case Tuple<Atom, Atom> error: 
+          throw new Exception("Got an error when starting gen server " + error.Item2);
+        default:
+          throw new Exception("Failed to start the gen server for unknown reasons");
+      }
     }
   }
 

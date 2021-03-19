@@ -11,8 +11,7 @@ namespace TestImpl.Tests
       public Object Start(Runtime runtime)
       {
         this.runtime = runtime;
-        var pid = Process.Spawn(runtime, WorkerLoop);
-        return new Tuple<Atom, Pid>(new Atom("ok"), pid);
+        return Process.Spawn(runtime, WorkerLoop);
       }
 
       ProcessResult WorkerLoop(Process ctx) {

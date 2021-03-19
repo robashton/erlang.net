@@ -12,6 +12,7 @@ all_test_() ->
                           , record_round_trip:tests()
                           , basic_gen:tests()
                           , dotnet_code:tests()
+                          , named_gen_servers:tests()
                           ])).
 
 create_host() ->

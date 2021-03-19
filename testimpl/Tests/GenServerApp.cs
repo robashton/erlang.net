@@ -61,12 +61,11 @@ namespace TestImpl.Tests
     }
   }
 
-    public class GenServerApp : IApp
+  public class GenServerApp : IApp
+  {
+    public Object Start(Runtime runtime)
     {
-
-      public Object Start(Runtime runtime)
-      {
-        return GenServer.StartLink(runtime, () => new MyGenServer(runtime) );
-      }
+      return GenServer.StartLink(runtime, () => new MyGenServer(runtime) );
     }
+  }
 }
