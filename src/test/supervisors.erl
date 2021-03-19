@@ -12,7 +12,8 @@ tests() ->
    { <<"Can start a supervisor">>,
      fun(Bridge) ->
          { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
-         ?assert(is_pid(Pid))
+         ?assert(is_pid(Pid)),
+         exit(Pid, shutdown)
      end }
   ].
 

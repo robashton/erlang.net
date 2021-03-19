@@ -19,6 +19,7 @@ all_test_() ->
 create_host() ->
   case ets:whereis(test_host) of
     undefined ->
+       logger:set_primary_config(level, none),
       { ok, Host } = dotnet:load_hostfxr(),
       ets:new(test_host, [set, protected, named_table]),
       ets:insert(test_host, { host_fxr, Host }),
