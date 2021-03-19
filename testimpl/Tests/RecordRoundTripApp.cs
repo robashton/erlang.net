@@ -8,11 +8,11 @@ namespace TestImpl.Tests
     {
       Runtime runtime;
 
-      public ErlNifTerm Start(Runtime runtime)
+      public Object Start(Runtime runtime)
       {
         this.runtime = runtime;
         var pid = Process.Spawn(runtime, WorkerLoop);
-        return runtime.MakeTuple2( runtime.MakeAtom("ok"), runtime.MakePid(pid) );
+        return new Tuple<Atom, Pid>(new Atom("ok"), pid);
       }
 
       ProcessResult WorkerLoop(Process ctx) {

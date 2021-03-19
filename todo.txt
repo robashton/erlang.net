@@ -1,0 +1,9 @@
+- Get rid of context from genserver.startlink
+- Get rid of type from genserver.startlink
+- Add supervisor start link
+- Change the start handler for IApp to be Object, sod it
+  - ErlNifTerm will still work
+  - As will anything else
+- Add supervisors..
+
+

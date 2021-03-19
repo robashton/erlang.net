@@ -40,7 +40,7 @@ tests() ->
      fun(Bridge) ->
          { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
          Result = gen_server:call(Pid, "hi"),
-         ?assertEqual("boobs", Result)
+         ?assertEqual("nope", Result)
      end },
    { <<"Send a message to the handle_info of a gen server">>,
      fun(Bridge) ->

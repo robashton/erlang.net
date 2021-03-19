@@ -5,6 +5,6 @@ namespace CsLib
 {
     public interface IApp
     {
-      ErlNifTerm Start(Runtime runtime);
+      Object Start(Runtime runtime);
     }
 }

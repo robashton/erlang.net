@@ -7,39 +7,8 @@ using System.Runtime.InteropServices;
 
 namespace CsLib.Erlang
 {
-  public delegate GenInitResult GenInit<T>(GenInitContext<T> ctx);
-
-  public sealed class GenInitContext<T> {
-    private Runtime runtime;
-
-    internal GenInitContext(Runtime runtime) {
-      this.runtime = runtime;
-    }
-
-    public GenInitResult Ok(T state) {
-      return new (runtime.MakeTuple2(
-            runtime.MakeAtom("ok"),
-            runtime.MakeObjectReference(state))); 
-    }
-  }
-
-  public class GenInitResult {
-    private ErlNifTerm term;
-
-    internal GenInitResult(ErlNifTerm term) {
-      this.term = term;
-    }
-    
-    public ErlNifTerm Native { get { return this.term; }}
-  }
-
-  public sealed class GenInitResult<T> : GenInitResult {
-    internal GenInitResult(ErlNifTerm term) : base(term) { }
-  }
-
-
   public sealed class GenServer {
-    public static Object StartLink<T>(Runtime runtime, GenInit<T> init) 
+    public static Object StartLink<T>(Runtime runtime, Func<T> init) 
     {
       var handleInfoInterface = typeof(T).GetInterfaces()
                                          .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IHandleInfo<>))
@@ -58,8 +27,8 @@ namespace CsLib.Erlang
                                          .FirstOrDefault();
 
       ErlangCallback initCallback = (Runtime runtime, ErlNifTerm obj) => {
-        var result = init(new GenInitContext<T>(runtime));
-        return result.Native;
+        var genserver = init();
+        return runtime.MakeTuple2(runtime.MakeAtom("ok"), runtime.MakeObjectReference(genserver));
       };
 
       // Yes nasty runtime reflection, we could actually cache all of these but who has the time of day?

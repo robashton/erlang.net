@@ -37,17 +37,9 @@ namespace TestImpl.Tests
 
     public class CodeApp : IApp
     {
-      Runtime runtime;
-
-      public ErlNifTerm Start(Runtime runtime)
+      public Object Start(Runtime runtime)
       {
-        this.runtime = runtime;
-        switch(GenServer.StartLink<CodeAppGenServer>(runtime, (ctx) => ctx.Ok(new CodeAppGenServer(runtime)))) {
-          case Tuple<Atom, Pid> result:
-            return runtime.MakeTuple2( runtime.MakeAtom(result.Item1), runtime.MakePid(result.Item2) );
-          default:
-            throw new InvalidOperationException();
-        }
+        return GenServer.StartLink(runtime, () => new CodeAppGenServer(runtime));
       }
     }
 }

@@ -103,7 +103,6 @@ namespace CsLib
 
       try
       {
-        // TODO: Ask stears what he remembers about app domains and this shit..
         AssemblyName assemblyName = AssemblyName.GetAssemblyName(filepath);
         Assembly assembly = Assembly.Load(assemblyName);
 
@@ -121,7 +120,7 @@ namespace CsLib
 
         var term = this.running_app.Start(this.runtime);
 
-        return term;
+        return this.runtime.ExportAuto(term);
       }
       // I think I just need to do this or we're going to end up with exceptions bubbling up into C
       // and we'll end up leaking shit all over the place
