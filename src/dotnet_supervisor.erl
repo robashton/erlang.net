@@ -9,13 +9,16 @@ start_link(Name, Init) ->
   supervisor:start_link(Name, ?MODULE, [Init]).
 
 init([Init]) ->
+  io:format(user, "I'm in a supervisor with pid ~p~n", [ self() ]),
   {ok, Bridge } = dotnet_host_bridge:get_bridge(),
   case dotnet:erlang_callback(Bridge, Init, []) of
     { ok, { Flags, Children } } ->
-      { ok,  { maps:filter(fun (_, V) -> V /= undefined end, Flags), lists:map(fun(Child) ->
+
+      WithoutUndefineds = { maps:filter(fun (_, V) -> V /= undefined end, Flags), lists:map(fun(Child) ->
                                                                          maps:filter(fun (_, V) -> V /= undefined end, Child)
-                                                                     end, Children) }
-      }
+                                                                     end, Children) },
+
+      { ok,  WithoutUndefineds }
   end.
 
 

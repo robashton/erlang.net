@@ -21,17 +21,30 @@
         }).
 
 start_link(Callbacks) ->
-  gen_server:start_link(?MODULE, [Callbacks], []).
+  DispatchLoopPid = self(),
+  { ok, ActualOwnerPid } = dotnet_host_bridge:get_owner_of_dispatch(DispatchLoopPid),
+  { ok, StartedPid } = gen_server:start_link(?MODULE, [Callbacks, ActualOwnerPid], []),
+  unlink(StartedPid),
+  { ok, StartedPid }.
+
 
 start_link(Name, Callbacks) ->
-  gen_server:start_link(Name, ?MODULE, [Callbacks], []).
+  DispatchLoopPid = self(),
+  { ok, ActualOwnerPid } = dotnet_host_bridge:get_owner_of_dispatch(DispatchLoopPid),
+  {ok, StartedPid } = gen_server:start_link(Name, ?MODULE, [Callbacks, ActualOwnerPid], []),
+  unlink(StartedPid),
+  { ok, StartedPid }.
 
 init([#{ init := Init
        , handleinfo := HandleInfo
        , handlecall := HandleCall
        , handlecast := HandleCast
        , terminate := Terminate
-       }]) ->
+       }, ActualOwnerPid]) ->
+
+  io:format(user, "Linking ~p to ~p", [ self(), ActualOwnerPid ]),
+
+  link(ActualOwnerPid),
   {ok, Bridge } = dotnet_host_bridge:get_bridge(),
   case dotnet:erlang_callback(Bridge, Init, []) of
     { ok, Ref } ->
@@ -85,6 +98,7 @@ handle_cast(Msg, State = #state { handle_cast = HandleInfo
   end.
 
 terminate(_Reason, _State = #state { terminate = undefined }) ->
+  io:format(user, "Gen ~p terminating with reason ~p ~n", [ self(), _Reason ]),
   ok;
 
 terminate(Reason, _State = #state { bridge = Bridge, terminate = Terminate, ref = Ref }) ->

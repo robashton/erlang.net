@@ -1,10 +1,18 @@
 -module(tests).
 
+-export([wait_for/2]).
+
 -include_lib("eunit/include/eunit.hrl").
 
 -define(test_assembly, "priv/testimpl.dll").
 -define(single_process_app, "TestImpl.Tests.SingleProcessApp").
 
+wait_for(Name, 0) -> false;
+wait_for(Name, Timeout) ->
+  case whereis(Name) of
+    undefined -> timer:sleep(1), wait_for(Name, Timeout-1);
+    _ -> true
+  end.
 
 all_test_() ->
   with_bridge(lists:concat([basic_app:tests()

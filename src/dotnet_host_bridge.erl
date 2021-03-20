@@ -7,6 +7,7 @@
 
 -export([ start_link/1
         , get_bridge/0
+        ,  get_owner_of_dispatch/1
         ]).
 
 -export([ init/1
@@ -26,12 +27,14 @@ get_bridge() ->
   [{ bridge, Bridge }] = ets:lookup(control, bridge),
   { ok, Bridge }.
 
+get_owner_of_dispatch(Pid) ->
+  gen_server:call(?SERVER, { get_owner_of_dispatch, Pid }).
+
 start_link(HostFxr) ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [HostFxr], []).
 
 init([HostFxr]) ->
   process_flag(trap_exit, true),
-
 
   {ok, Bridge} = dotnet:create_bridge(HostFxr),
 
@@ -43,8 +46,12 @@ init([HostFxr]) ->
              , caller_pool = maps:new()
              }}.
 
-handle_call(not_implemented, _From, State = #state{}) ->
-  {reply, ok, State}.
+handle_call({get_owner_of_dispatch, DispatchLoopPid}, _From, State = #state{ caller_pool = Pool}) ->
+
+  List =  maps:to_list(Pool),
+  { Owner, _ }  = lists:keyfind(DispatchLoopPid, 2, List),
+
+  {reply, { ok, Owner }, State}.
 
 handle_cast(not_implemented, State) ->
   {noreply, State}.
@@ -52,12 +59,13 @@ handle_cast(not_implemented, State) ->
 handle_info({call_fn, Caller, Args, Resource}, State = #state{ bridge = Bridge, caller_pool = CallerPool }) ->
   NewState = case maps:find(Caller, CallerPool) of
                {ok, Worker} ->
-                 Worker ! { call_fn, Args, Resource },
+                 Worker ! { '$$call_fn', Args, Resource },
                  State;
                error ->
                  Pid = spawn_link(fun() -> dispatch_loop(Caller) end),
-                 Pid ! { call_fn, Args, Resource },
+                 io:format(user, "Spawned a dispatch loop on pid ~p~n", [ Pid ]),
                  erlang:monitor(process, Caller),
+                 Pid ! { '$$call_fn', Args, Resource },
                  State#state { caller_pool = maps:put(Caller, Pid, CallerPool) }
              end,
   {noreply, NewState};
@@ -65,6 +73,7 @@ handle_info({call_fn, Caller, Args, Resource}, State = #state{ bridge = Bridge, 
 handle_info({'DOWN', _, _, Caller, _ }, State = #state{ caller_pool = CallerPool }) ->
   NewState = case maps:find(Caller, CallerPool) of
                {ok, Worker} ->
+                 io:format(user, "Killing worker with pid ~p because ~p died~n", [ Worker, Caller ]),
                  Worker ! '$$stop',
                  State#state { caller_pool = maps:remove(Caller, CallerPool) };
                error ->
@@ -92,11 +101,11 @@ code_change(_OldVsn, State, _Extra) ->
 
 dispatch_loop(Owner) ->
   receive
-    { call_fn, { M, F, A }, Resource } ->
+    { '$$call_fn', { M, F, A }, Resource } ->
       { ok, Bridge } = get_bridge(),
       Result = erlang:apply(M, F, A),
       dotnet:callback(Bridge, Resource, Result),
-      dispatch_loop();
+      dispatch_loop(Owner);
     '$$stop' -> ok;
     Other -> Owner ! Other
   end.
