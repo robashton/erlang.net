@@ -1,6 +1,6 @@
 using System;
-using CsLib;
 using CsLib.Erlang;
+using CsLib;
 
 using InfoMsg = System.Tuple<System.String, CsLib.Erlang.Pid>;
 using CallMsg = System.Object;
@@ -22,27 +22,25 @@ namespace TestImpl.Tests
   }
   public class NamedGenServersApp : IApp
   {
-    Runtime runtime;
     Pid workerOne = Pid.Zero;
     Pid workerTwo = Pid.Zero;
 
-    public Object Start(Runtime runtime)
+    public Object Start()
     {
-      this.runtime = runtime;
-      return Process.Spawn(runtime, WorkerInit);
+      return Process.Spawn(WorkerInit);
     }
 
     ProcessResult WorkerInit(Process ctx) {
-      workerOne = GenServer.StartLink(runtime, new Atom("named-one"), () => new MyNamedGenServer("one"));
-      workerTwo = GenServer.StartLink(runtime, new Atom("named-two"), () => new MyNamedGenServer("two"));
+      workerOne = GenServer.StartLink(new Atom("named-one"), () => new MyNamedGenServer("one"));
+      workerTwo = GenServer.StartLink(new Atom("named-two"), () => new MyNamedGenServer("two"));
       return ctx.Receive((Process ctx, Object msg) => WorkerLoopReceive(ctx, msg));
     }
 
     ProcessResult WorkerLoopReceive(Process ctx, Object msg)
     {
-      GenServer.Stop(runtime, workerOne);
-      GenServer.Stop(runtime, workerTwo);
-      return ctx.Finish(this.runtime.MakeAtom("ok"));
+      GenServer.Stop(workerOne);
+      GenServer.Stop(workerTwo);
+      return ctx.Finish(Erlang.MakeAtom("ok"));
     }
   }
 }

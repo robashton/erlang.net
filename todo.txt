@@ -12,5 +12,7 @@
 - c# supervisors as erlang children
 - Fix the spin wait to use the enif shit
 - Get rid of runtime/talk about getting rid of runtime
-
+- ctx.Finish should just take obj and coerce
+- as should Process.send if it doesn't already
+- app.start should take args
 

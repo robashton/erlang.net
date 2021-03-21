@@ -9,7 +9,7 @@ namespace CsLib.Erlang
 
     public ErlNifTerm Native { get { return this.native; }}
 
-    internal ProcessResult(Runtime runtime, ErlNifTerm native) {
+    internal ProcessResult(ErlNifTerm native) {
       this.native = native;
     }
 

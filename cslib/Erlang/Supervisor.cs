@@ -10,17 +10,17 @@ using System.Runtime.InteropServices;
 namespace CsLib.Erlang
 {
   public sealed class Supervisor {
-    public static Pid StartLink(Runtime runtime, String id, Func<SupervisorConfig> init) {
+    public static Pid StartLink(String id, Func<SupervisorConfig> init) {
 
-      ErlangCallback initCallback = (Runtime runtime, ErlNifTerm args) => {
+      ErlangCallback initCallback = (ErlNifTerm args) => {
         var config = init();
-        return runtime.MakeTuple2(
-            runtime.MakeAtom("ok"),
-            config.ToErlNifTerm(runtime)
+        return Erlang.MakeTuple2(
+            Erlang.MakeAtom("ok"),
+            config.ToErlNifTerm()
             );
       };
 
-      switch(runtime.Modules.DotnetSupervisor.StartLink(Tuple.Create(new Atom("local"), new Atom(id)), initCallback)) {
+      switch(Erlang.Modules.DotnetSupervisor.StartLink(Tuple.Create(new Atom("local"), new Atom(id)), initCallback)) {
         case Tuple<Atom, Pid> success:
           return success.Item2;
         case Tuple<Atom, Atom> error:
@@ -49,9 +49,9 @@ namespace CsLib.Erlang
       public Tuple<Atom, Atom, ErlNifTerm> Start { get; init; }
     }
 
-    internal ErlNifTerm ToErlNifTerm(Runtime runtime) {
-      return runtime.MakeTuple2(
-          runtime.ExportAuto(
+    internal ErlNifTerm ToErlNifTerm() {
+      return Erlang.MakeTuple2(
+          Erlang.ExportAuto(
             new SupFlags {
              Strategy = strategy switch {
                             SupervisionStrategy.OneForOne => new Atom("one_for_one"),
@@ -61,10 +61,10 @@ namespace CsLib.Erlang
              Intensity = intensity,
              Period = period
             }),
-          runtime.MakeList(
-            children.Select(c => runtime.ExportAuto(new SupChild {
+          Erlang.MakeList(
+            children.Select(c => Erlang.ExportAuto(new SupChild {
                                                 Id = new Atom(c.Id),
-                                                Start = Tuple.Create(new Atom("dotnet_shim"), new Atom("callback"), runtime.MakeList( runtime.MakeObjectReference(c.Init) ))
+                                                Start = Tuple.Create(new Atom("dotnet_shim"), new Atom("callback"), Erlang.MakeList( Erlang.MakeObjectReference(c.Init) ))
                                               })
                            ).ToArray()
             ));
@@ -89,8 +89,8 @@ namespace CsLib.Erlang
     Func<Pid> init;
 
     public String Id { get { return id; }}
-    public ErlangCallback Init { get { return new ErlangCallback((Runtime runtime, ErlNifTerm x) => { 
-        return runtime.ExportAuto(Tuple.Create(new Atom("ok"), init())); }); }}
+    public ErlangCallback Init { get { return new ErlangCallback((ErlNifTerm x) => { 
+        return Erlang.ExportAuto(Tuple.Create(new Atom("ok"), init())); }); }}
 
     internal SupervisorChild(String id, Func<Pid> init) {
       this.id = id;

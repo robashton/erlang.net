@@ -1,26 +1,19 @@
 ﻿using System;
-using CsLib;
 using CsLib.Erlang;
+using CsLib;
 
 namespace TestImpl.Tests
 {
     public class RecordRoundTripApp : IApp
     {
-      Runtime runtime;
-
-      public Object Start(Runtime runtime)
+      public Object Start()
       {
-        this.runtime = runtime;
-        return Process.Spawn(runtime, WorkerLoop);
-      }
-
-      ProcessResult WorkerLoop(Process ctx) {
-        return ctx.Receive<OurCoolRecord>(WorkerLoopReceive);
+        return Process.Spawn((ctx) => ctx.Receive<OurCoolRecord>((WorkerLoopReceive)));
       }
 
       ProcessResult WorkerLoopReceive(Process ctx, OurCoolRecord msg) {
-        this.runtime.Send(msg.Owner, runtime.ExportAuto(msg));
-        return ctx.Finish(runtime.MakeAtom("ok"));
+        Erlang.Send(msg.Owner, Erlang.ExportAuto(msg));
+        return ctx.Finish(Erlang.MakeAtom("ok"));
       }
     }
 

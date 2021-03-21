@@ -5,6 +5,6 @@ namespace CsLib
 {
     public interface IApp
     {
-      Object Start(Runtime runtime);
+      Object Start();
     }
 }

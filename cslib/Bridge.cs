@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Linq;
 using System.IO;
 
+using E = CsLib.Erlang.Erlang;
+
 namespace CsLib
 {
   public class Bridge {
@@ -23,28 +25,24 @@ namespace CsLib
     private delegate ErlNifTerm LoadAssemblyDelegate(ErlNifEnv env, IntPtr bridge, IntPtr assemblyName, IntPtr bridgeName);
     private delegate ErlNifTerm ErlangCallbackDelegate(ErlNifEnv nev, IntPtr bridge, ErlNifTerm callback, ErlNifTerm args);
 
-    Runtime runtime;
-    IApp running_app;
+    IApp runningApp;
 
     ReturnDelegate @return;
     LoadAssemblyDelegate load_assembly;
     ErlangCallbackDelegate erlang_callback;
     
-    private Bridge(Runtime runtime) {
-      this.runtime = runtime;
+    private Bridge() {
     }
 
     public class PrintFWriter : StringWriter
     {
-      Runtime runtime;
-      public PrintFWriter(Runtime runtime)
+      public PrintFWriter()
       {
-        this.runtime = runtime;
       }
 
       public override void WriteLine(string value)
       {
-        this.runtime.WriteDebug(value);
+        E.WriteDebug(value);
       }
     }
 
@@ -52,8 +50,7 @@ namespace CsLib
 
       CreateArgs* args = (CreateArgs*)ptr;
 
-      Runtime runtime = new ();
-      Bridge instance = new (runtime);
+      Bridge instance = new ();
 
       // If we don't stash the delegates to our static functions on the gcroot, they get cleared up before we're done (lol)
       // and if we try and use function pointers to static functions with 'unmanagedcallersonly', we get 
@@ -64,7 +61,7 @@ namespace CsLib
       instance.erlang_callback = ErlangCallbackWrapper;
 
       // If you Console.WriteLine before this, you'll break the erlang shell
-      Console.SetOut(new PrintFWriter(runtime));
+      Console.SetOut(new PrintFWriter());
 
       var handle = GCHandle.Alloc(instance);
       args->handle = GCHandle.ToIntPtr(handle);
@@ -92,17 +89,15 @@ namespace CsLib
 
     public ErlNifTerm ErlangCallback(ErlNifEnv env, ErlNifTerm fn, ErlNifTerm args)
     {
-      this.runtime.SetEnv(env);
-      ErlangCallback callback = (ErlangCallback)this.runtime.GetObjectReference(fn);
-      return callback(runtime, args);
+      return E.WithEnv(env, () => {
+        ErlangCallback callback = (ErlangCallback)E.GetObjectReference(fn);
+        return callback(args);
+     });
     }
 
     public ErlNifTerm LoadAssembly(ErlNifEnv env, String filepath, String typeName)
     {
-      this.runtime.SetEnv(env);
-
-      try
-      {
+      return E.WithEnv(env, () => {
         AssemblyName assemblyName = AssemblyName.GetAssemblyName(filepath);
         Assembly assembly = Assembly.Load(assemblyName);
 
@@ -111,23 +106,17 @@ namespace CsLib
           .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null && t.FullName == typeName);
 
         if (appType == null) {
-          return this.runtime.MakeAtom("enoent");
+          return E.MakeAtom("enoent");
         }
 
         var ctor = appType.GetConstructor(Type.EmptyTypes);
 
-        this.running_app = (IApp)ctor.Invoke(new object[]{});
+        this.runningApp = (IApp)ctor.Invoke(new object[]{});
 
-        var term = this.running_app.Start(this.runtime);
+        var term = this.runningApp.Start();
 
-        return this.runtime.MakeTuple2(this.runtime.MakeAtom("ok"), this.runtime.ExportAuto(term));
-      }
-      // I think I just need to do this or we're going to end up with exceptions bubbling up into C
-      // and we'll end up leaking shit all over the place
-      catch (Exception ex) {
-        Console.WriteLine("Exception in bridge: " + ex.ToString());
-        return this.runtime.MakeAtom("error");
-      }
+        return E.MakeTuple2(E.MakeAtom("ok"), E.ExportAuto(term));
+      });
     }
   }
 }

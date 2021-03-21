@@ -226,9 +226,18 @@ static ERL_NIF_TERM erlang_callback(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 
 static ErlNifFunc nif_funcs[] =
 {
-  // Core setup
   {"load_hostfxr_impl", 1, load_hostfxr},
   {"create_bridge", 1, create_bridge},
+
+  // so... if you're reading this it probably means you were wondering 'how is Rob tying Erlang together with C#'
+  // and now you're thinking "Oh god he did it as a nif what a monster doesn't he know about the scheduler?!!?!'
+  // but hopefully by now you'll have realised this is just an Maximum Effort April Fools joke and 
+  // if anybody actually thinks this project is something they should build something on top of (no matter how pretty the API)
+  // then they are very much mistaken
+  // I think you *could* get away with this if it wasn't for the million other hacks we then have to go through to make arbitrary code happenings
+  // happen from C#, but you'd need to flag whether each callback was CPU/IO bound at point of writing them in C# and .. boy oh no
+  // The correct way to do Erlang.NET is to just implement the protocol, and call library fns via messages, but that's effort and let's face it
+  // only 5 developers would be interested and 2 of them would be asking me to write it in F#
   {"run_app_from_assembly", 3, run_app_from_assembly, ERL_NIF_DIRTY_JOB_CPU_BOUND},
   {"callback", 3, callback, ERL_NIF_DIRTY_JOB_CPU_BOUND},
   {"erlang_callback", 3, erlang_callback, ERL_NIF_DIRTY_JOB_CPU_BOUND},

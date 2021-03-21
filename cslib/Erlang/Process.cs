@@ -5,56 +5,49 @@ using System.Runtime.InteropServices;
 
 namespace CsLib.Erlang
 {
-  public delegate ProcessResult ProcessInit(Process ctx);
-  public delegate ProcessResult ProcessMsg(Process ctx, ErlNifTerm msg);
-  public delegate ProcessResult ProcessMsg<T>(Process ctx, T msg);
-
   public sealed class Process
   {
-    Runtime runtime;
-    internal Process(Runtime runtime)  {
-      this.runtime = runtime;
-    }
+    internal Process()  {}
 
-    public static Pid Spawn(Runtime runtime, ProcessInit init) {
-      ErlangCallback del = (Runtime runtime, ErlNifTerm obj) => {
-        var processResult = init(new Process(runtime));
+    public static Pid Spawn(Func<Process, ProcessResult> init) {
+      ErlangCallback del = (ErlNifTerm obj) => {
+        var processResult = init(new Process());
         return processResult.Native;
       };
-      return runtime.Modules.DotnetProcess.Init(del); 
+      return Erlang.Modules.DotnetProcess.Init(del); 
     }
 
 
-    public ProcessResult Receive<T>(ProcessMsg<T> callback) {
-      ErlangCallback del = (Runtime runtime, ErlNifTerm obj) => {
-        T converted = runtime.Coerce<T>(obj);
-        var processResult = callback(new Process(runtime), converted);
+    public ProcessResult Receive<T>(Func<Process, T, ProcessResult> callback) {
+      ErlangCallback del = (ErlNifTerm obj) => {
+        T converted = Erlang.Coerce<T>(obj);
+        var processResult = callback(new Process(), converted);
         return processResult.Native;
       };
       
-      var resource = runtime.MakeObjectReference(del);
-      var tuple = runtime.MakeTuple2( this.runtime.MakeAtom("receive"), resource);
-      return new ProcessResult(this.runtime, tuple);
+      var resource = Erlang.MakeObjectReference(del);
+      var tuple = Erlang.MakeTuple2( Erlang.MakeAtom("receive"), resource);
+      return new ProcessResult(tuple);
     }
 
-    public ProcessResult Receive<T>(int timeout, ProcessMsg<T> callback) {
-      ErlangCallback del = (Runtime runtime, ErlNifTerm obj) => {
-        T converted = runtime.Coerce<T>(obj);
-        var processResult = callback(new Process(runtime), converted);
+    public ProcessResult Receive<T>(int timeout, Func<Process, T, ProcessResult> callback) {
+      ErlangCallback del = (ErlNifTerm obj) => {
+        T converted = Erlang.Coerce<T>(obj);
+        var processResult = callback(new Process(), converted);
         return processResult.Native;
       };
       
-      var resource = runtime.MakeObjectReference(del);
-      var tuple = this.runtime.MakeTuple3(
-                    this.runtime.MakeAtom("receive"),
-                    this.runtime.MakeInt(timeout),
+      var resource = Erlang.MakeObjectReference(del);
+      var tuple = Erlang.MakeTuple3(
+                    Erlang.MakeAtom("receive"),
+                    Erlang.MakeInt(timeout),
                     resource);
-      return new ProcessResult(this.runtime, tuple);
+      return new ProcessResult(tuple);
     }
 
     public ProcessResult Finish(ErlNifTerm result) {
-      var tuple = this.runtime.MakeTuple2(this.runtime.MakeAtom("finish"), result);
-      return new ProcessResult(this.runtime, tuple);
+      var tuple = Erlang.MakeTuple2(Erlang.MakeAtom("finish"), result);
+      return new ProcessResult(tuple);
     }
   }
 }

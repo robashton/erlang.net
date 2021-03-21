@@ -6,14 +6,11 @@ namespace TestImpl
 {
     public class MyApp : IApp
     {
-      Runtime runtime;
-
       public int WaitCount { get; set; }
 
-      public Object Start(Runtime runtime)
+      public Object Start()
       {
-        this.runtime = runtime;
-        var pid = Process.Spawn(runtime, WorkerLoop);
+        var pid = Process.Spawn(WorkerLoop);
         return new Tuple<Atom, Pid>(new Atom("ok"), pid);
       }
 
@@ -25,7 +22,7 @@ namespace TestImpl
       {
         if(msg.HasValue) {
           Console.WriteLine("C# received a message, allowing process to terminate \r");
-          return ctx.Finish(this.runtime.MakeAtom("ok"));
+          return ctx.Finish(Erlang.MakeAtom("ok"));
         } else {
           this.WaitCount++;
           Console.WriteLine("C# timed out waiting for message, receiving again \r");

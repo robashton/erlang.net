@@ -9,20 +9,20 @@ namespace CsLib.Erlang
 {
   public sealed class GenServer {
 
-    public static void Stop(Runtime runtime, Pid pid) {
-      runtime.Modules.GenServer.Stop(pid);
+    public static void Stop(Pid pid) {
+      Erlang.Modules.GenServer.Stop(pid);
     }
 
-    public static Pid StartLink<T>(Runtime runtime, String name, Func<T> init)  {
-      return StartLinkInternal(runtime, Tuple.Create(new Atom("local"), new Atom(name)), init);
+    public static Pid StartLink<T>(String name, Func<T> init)  {
+      return StartLinkInternal(Tuple.Create(new Atom("local"), new Atom(name)), init);
     }
     
-    public static Pid StartLink<T>(Runtime runtime, Func<T> init) 
+    public static Pid StartLink<T>(Func<T> init) 
     {
-      return StartLinkInternal(runtime, null, init);
+      return StartLinkInternal(null, init);
     }
 
-    private static Pid StartLinkInternal<T>(Runtime runtime, Object name, Func<T> init) 
+    private static Pid StartLinkInternal<T>(Object name, Func<T> init) 
     {
       var handleInfoInterface = typeof(T).GetInterfaces()
                                          .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IHandleInfo<>))
@@ -40,47 +40,47 @@ namespace CsLib.Erlang
                                          .Where(x => x == typeof(ITerminate))
                                          .FirstOrDefault();
 
-      ErlangCallback initCallback = (Runtime runtime, ErlNifTerm obj) => {
+      ErlangCallback initCallback = (ErlNifTerm obj) => {
         var genserver = init();
-        return runtime.MakeTuple2(runtime.MakeAtom("ok"), runtime.MakeObjectReference(genserver));
+        return Erlang.MakeTuple2(Erlang.MakeAtom("ok"), Erlang.MakeObjectReference(genserver));
       };
 
-      // Yes nasty runtime reflection, we could actually cache all of these but who has the time of day?
+      // Yes nasty Erlang reflection, we could actually cache all of these but who has the time of day?
       // If you're worried about performance then that means you're actually using this code
       // in which case you have bigger concerns than performance
-      ErlangCallback handleInfoCallback = (Runtime runtime, ErlNifTerm input) => {
-        var args = runtime.Coerce<Tuple<ErlNifTerm, ErlNifTerm>>(input);
+      ErlangCallback handleInfoCallback = (ErlNifTerm input) => {
+        var args = Erlang.Coerce<Tuple<ErlNifTerm, ErlNifTerm>>(input);
         var msgType = handleInfoInterface.GetGenericArguments()[0];
-        var msg = runtime.Coerce(args.Item1, msgType);
-        var state = runtime.GetObjectReference(args.Item2);
-        HandleInfoResult result = (HandleInfoResult)handleInfoInterface.GetMethod("HandleInfo").Invoke(state, new object[] { new HandleInfoContext(runtime, state),  msg });
+        var msg = Erlang.Coerce(args.Item1, msgType);
+        var state = Erlang.GetObjectReference(args.Item2);
+        HandleInfoResult result = (HandleInfoResult)handleInfoInterface.GetMethod("HandleInfo").Invoke(state, new object[] { new HandleInfoContext(state),  msg });
         return result.Native;
       }; 
 
-      ErlangCallback handleCallCallback = (Runtime runtime, ErlNifTerm input) => {
-        var args = runtime.Coerce<Tuple<ErlNifTerm, ErlNifTerm, ErlNifTerm>>(input);
+      ErlangCallback handleCallCallback = (ErlNifTerm input) => {
+        var args = Erlang.Coerce<Tuple<ErlNifTerm, ErlNifTerm, ErlNifTerm>>(input);
         var msgType = handleCallInterface.GetGenericArguments()[0];
-        var msg = runtime.Coerce(args.Item1, msgType);
-        var sender = runtime.Coerce<Pid>(args.Item2);
-        var state = runtime.GetObjectReference(args.Item3);
-        HandleCallResult result = (HandleCallResult)handleCallInterface.GetMethod("HandleCall").Invoke(state, new object[] { new HandleCallContext(runtime, sender, state),  msg });
+        var msg = Erlang.Coerce(args.Item1, msgType);
+        var sender = Erlang.Coerce<Pid>(args.Item2);
+        var state = Erlang.GetObjectReference(args.Item3);
+        HandleCallResult result = (HandleCallResult)handleCallInterface.GetMethod("HandleCall").Invoke(state, new object[] { new HandleCallContext(sender, state),  msg });
         return result.Native;
       }; 
 
-      ErlangCallback handleCastCallback = (Runtime runtime, ErlNifTerm input) => {
-        var args = runtime.Coerce<Tuple<ErlNifTerm, ErlNifTerm>>(input);
+      ErlangCallback handleCastCallback = (ErlNifTerm input) => {
+        var args = Erlang.Coerce<Tuple<ErlNifTerm, ErlNifTerm>>(input);
         var msgType = handleCastInterface.GetGenericArguments()[0];
-        var msg = runtime.Coerce(args.Item1, msgType);
-        var state = runtime.GetObjectReference(args.Item2);
-        HandleCastResult result = (HandleCastResult)handleCastInterface.GetMethod("HandleCast").Invoke(state, new object[] { new HandleCastContext(runtime, state),  msg });
+        var msg = Erlang.Coerce(args.Item1, msgType);
+        var state = Erlang.GetObjectReference(args.Item2);
+        HandleCastResult result = (HandleCastResult)handleCastInterface.GetMethod("HandleCast").Invoke(state, new object[] { new HandleCastContext(state),  msg });
         return result.Native;
       }; 
 
-      ErlangCallback terminateCallback = (Runtime runtime, ErlNifTerm input) => {
-        var args = runtime.Coerce<Tuple<ErlNifTerm, ErlNifTerm>>(input);
-        var reason = runtime.Coerce<Atom>(args.Item1);
-        var state = runtime.GetObjectReference(args.Item2);
-        TerminateResult result = (TerminateResult)terminateInterface.GetMethod("Terminate").Invoke(state, new object[] { new TerminateContext(runtime), reason });
+      ErlangCallback terminateCallback = (ErlNifTerm input) => {
+        var args = Erlang.Coerce<Tuple<ErlNifTerm, ErlNifTerm>>(input);
+        var reason = Erlang.Coerce<Atom>(args.Item1);
+        var state = Erlang.GetObjectReference(args.Item2);
+        TerminateResult result = (TerminateResult)terminateInterface.GetMethod("Terminate").Invoke(state, new object[] { new TerminateContext(), reason });
         return result.Native;
       }; 
 
@@ -94,9 +94,9 @@ namespace CsLib.Erlang
       Object result;
 
       if(name != null) {
-        result = runtime.Modules.DotnetGenserver.StartLink(name, callbacks);
+        result = Erlang.Modules.DotnetGenserver.StartLink(name, callbacks);
       } else {
-        result = runtime.Modules.DotnetGenserver.StartLink(callbacks);
+        result = Erlang.Modules.DotnetGenserver.StartLink(callbacks);
       }
 
       switch(result) {
@@ -162,67 +162,58 @@ namespace CsLib.Erlang
   }
 
   public sealed class HandleInfoContext {
-    Runtime runtime;
     Object genserver;
 
-    internal HandleInfoContext(Runtime runtime, Object genserver) {
-      this.runtime = runtime;
+    internal HandleInfoContext( Object genserver) {
       this.genserver = genserver;
     }
 
     public HandleInfoResult NoReply() {
-      return new (runtime.MakeTuple2(runtime.MakeAtom("noreply"), runtime.MakeObjectReference(genserver)));
+      return new (Erlang.MakeTuple2(Erlang.MakeAtom("noreply"), Erlang.MakeObjectReference(genserver)));
     }
   }
 
   public sealed class HandleCastContext {
-    Runtime runtime;
     Object genserver;
 
-    internal HandleCastContext(Runtime runtime, Object genserver) {
-      this.runtime = runtime;
+    internal HandleCastContext(Object genserver) {
       this.genserver = genserver;
     }
 
     public HandleCastResult NoReply() {
-      return new (runtime.MakeTuple2(runtime.MakeAtom("noreply"), runtime.MakeObjectReference(genserver)));
+      return new (Erlang.MakeTuple2(Erlang.MakeAtom("noreply"), Erlang.MakeObjectReference(genserver)));
     }
   }
 
   public sealed class HandleCallContext {
-    Runtime runtime;
     Object genserver;
     Pid sender;
     
     public Pid Sender { get { return sender; }}
 
-    internal HandleCallContext(Runtime runtime, Pid sender, Object genserver) {
-      this.runtime = runtime;
+    internal HandleCallContext(Pid sender, Object genserver) {
       this.genserver = genserver;
       this.sender = sender;
     }
 
     public HandleCallResult Reply(Object result) {
-      return Reply(this.runtime.ExportAuto(result));
+      return Reply(Erlang.ExportAuto(result));
     }
 
     public HandleCallResult Reply(ErlNifTerm result) {
-      return new (runtime.MakeTuple3(
-              runtime.MakeAtom("reply"),
+      return new (Erlang.MakeTuple3(
+              Erlang.MakeAtom("reply"),
               result,
-              runtime.MakeObjectReference(genserver)));
+              Erlang.MakeObjectReference(genserver)));
     }
   }
 
   public sealed class TerminateContext {
-    Runtime runtime;
-
-    internal TerminateContext(Runtime runtime) {
-      this.runtime = runtime;
+    internal TerminateContext() {
     }
 
     public TerminateResult Ok() {
-      return new (runtime.MakeAtom("ok"));
+      return new (Erlang.MakeAtom("ok"));
     }
   }
 

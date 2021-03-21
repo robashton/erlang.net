@@ -12,16 +12,13 @@ namespace CsLib.Erlang
 {
   public sealed class Modules : DynamicObject
   {
-    private Runtime runtime;
-
-    public Modules(Runtime runtime) {
-      this.runtime = runtime;
+    public Modules() {
     }
     
     public override bool TryGetMember(
         GetMemberBinder binder, out object result)
     {
-      result = new Functions(runtime, binder.Name);
+      result = new Functions(binder.Name);
       return true;
     }
   }

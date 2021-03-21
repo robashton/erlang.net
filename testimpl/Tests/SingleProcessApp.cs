@@ -6,12 +6,9 @@ namespace TestImpl.Tests
 {
     public class SingleProcessApp : IApp
     {
-      Runtime runtime;
-
-      public Object Start(Runtime runtime)
+      public Object Start()
       {
-        this.runtime = runtime;
-        return Process.Spawn(runtime, WorkerLoop);
+        return Process.Spawn(WorkerLoop);
       }
 
       ProcessResult WorkerLoop(Process ctx) {
@@ -23,10 +20,10 @@ namespace TestImpl.Tests
         switch(msg) 
         {
           case Atom cmd when cmd == "bye": 
-            return ctx.Finish(this.runtime.MakeAtom("ok"));
+            return ctx.Finish(Erlang.MakeAtom("ok"));
 
           case Tuple<Atom, Pid, Atom> tuple when tuple.Item1 == "send_me":
-            this.runtime.Send(tuple.Item2, runtime.MakeAtom(tuple.Item3));
+            Erlang.Send(tuple.Item2, Erlang.MakeAtom(tuple.Item3));
             break;
 
           default:

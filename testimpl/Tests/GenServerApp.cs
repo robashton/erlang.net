@@ -13,12 +13,9 @@ namespace TestImpl.Tests
                            , IHandleCast<InfoMsg>
                            , ITerminate
   {
-    Runtime runtime;
     Pid owner = Pid.Zero;
 
-    public MyGenServer(Runtime runtime) {
-      this.runtime = runtime;
-    }
+    public MyGenServer() {}
 
     public HandleInfoResult HandleInfo(HandleInfoContext ctx, InfoMsg msg) {
       HandleInfoImpl(msg);
@@ -44,7 +41,7 @@ namespace TestImpl.Tests
 
     public TerminateResult Terminate(TerminateContext ctx, Atom reason) {
       if(this.owner.HasValue) {
-        this.runtime.Send(this.owner, runtime.MakeAtom("bye"));
+        Erlang.Send(this.owner, new Atom("bye"));
       }
       return ctx.Ok();
     }
@@ -52,10 +49,10 @@ namespace TestImpl.Tests
     private void HandleInfoImpl(InfoMsg msg) {
       switch(msg) {
         case ( "hello bob", _ ): 
-          runtime.Send(msg.Item2, runtime.ExportAuto("hello joe"));
+          Erlang.Send(msg.Item2, Erlang.ExportAuto("hello joe"));
           break;
         case ( _, _ ): 
-          runtime.Send(msg.Item2, runtime.ExportAuto("boobs"));
+          Erlang.Send(msg.Item2, Erlang.ExportAuto("boobs"));
           break;
       }
     }
@@ -63,9 +60,9 @@ namespace TestImpl.Tests
 
   public class GenServerApp : IApp
   {
-    public Object Start(Runtime runtime)
+    public Object Start()
     {
-      return GenServer.StartLink(runtime, () => new MyGenServer(runtime) );
+      return GenServer.StartLink(() => new MyGenServer() );
     }
   }
 }

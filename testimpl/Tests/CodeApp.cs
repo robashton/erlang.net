@@ -1,34 +1,32 @@
 using System;
-using CsLib;
 using CsLib.Erlang;
+using CsLib;
 
 namespace TestImpl.Tests
 {
   public class CodeAppGenServer : IHandleInfo<Object>
   {
-    Runtime runtime;
     Pid fileHandle = Pid.Zero;
 
-    public CodeAppGenServer(Runtime runtime) {
-      this.runtime = runtime;
+    public CodeAppGenServer() {
     }
 
     public HandleInfoResult HandleInfo(HandleInfoContext ctx, Object msg) {
       switch(msg) {
         case Tuple<Atom, Pid, String, Byte[]> c when c.Item1 == "write": 
-          Atom result = (Atom)this.runtime.Modules.File.WriteFile(c.Item3, c.Item4);
-          this.runtime.Send(c.Item2, this.runtime.MakeAtom(result));
+          Atom result = (Atom)Erlang.Modules.File.WriteFile(c.Item3, c.Item4);
+          Erlang.Send(c.Item2, Erlang.MakeAtom(result));
           break;
         case Tuple<Atom, String> cmd when cmd.Item1 == "open":
-          Tuple <Atom, Pid> success = (Tuple<Atom,Pid>)this.runtime.Modules.File.Open(cmd.Item2, new object[] { new Atom("write") } );
+          Tuple <Atom, Pid> success = (Tuple<Atom,Pid>)Erlang.Modules.File.Open(cmd.Item2, new object[] { new Atom("write") } );
           this.fileHandle = success.Item2;
           break;
         case Tuple<Atom, byte[]> cmd when cmd.Item1 == "write":
-          this.runtime.Modules.File.Write(this.fileHandle, cmd.Item2);
+          Erlang.Modules.File.Write(this.fileHandle, cmd.Item2);
           break;
         case Tuple<Atom, Pid> cmd when cmd.Item1 == "close":
-          this.runtime.Modules.File.Close(this.fileHandle);
-          this.runtime.Send(cmd.Item2, this.runtime.MakeAtom("ok"));
+          Erlang.Modules.File.Close(this.fileHandle);
+          Erlang.Send(cmd.Item2, Erlang.MakeAtom("ok"));
           break;
       }
       return ctx.NoReply();
@@ -37,9 +35,9 @@ namespace TestImpl.Tests
 
     public class CodeApp : IApp
     {
-      public Object Start(Runtime runtime)
+      public Object Start()
       {
-        return GenServer.StartLink(runtime, () => new CodeAppGenServer(runtime));
+        return GenServer.StartLink( () => new CodeAppGenServer());
       }
     }
 }
