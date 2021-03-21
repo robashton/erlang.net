@@ -49,10 +49,10 @@ namespace TestImpl.Tests
     private void HandleInfoImpl(InfoMsg msg) {
       switch(msg) {
         case ( "hello bob", _ ): 
-          Erlang.Send(msg.Item2, Erlang.ExportAuto("hello joe"));
+          Erlang.Send(msg.Item2, "hello joe");
           break;
         case ( _, _ ): 
-          Erlang.Send(msg.Item2, Erlang.ExportAuto("boobs"));
+          Erlang.Send(msg.Item2, "boobs");
           break;
       }
     }

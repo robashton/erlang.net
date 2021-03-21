@@ -1,18 +1,16 @@
 [x] Get rid of context from genserver.startlink
 [x] Get rid of type from genserver.startlink
-]x] Add supervisor start link
 [x] Change the start handler for IApp to be Object, sod it
-  - ErlNifTerm will still work
-  - As will anything else
+[x] ctx.Finish should just take obj and coerce
+[x] as should Process.send if it doesn't already
+]x] Add supervisor start link
 [x] Add supervisors..
+[x] test supervisor trees
+[x] Get rid of runtime/talk about getting rid of runtime
 
-- test supervisor trees
 - supervisors as supervision children
 - c# gen servers as erlang children
 - c# supervisors as erlang children
 - Fix the spin wait to use the enif shit
-- Get rid of runtime/talk about getting rid of runtime
-- ctx.Finish should just take obj and coerce
-- as should Process.send if it doesn't already
 - app.start should take args
 

@@ -45,6 +45,9 @@ namespace CsLib.Erlang
       return new ProcessResult(tuple);
     }
 
+    public ProcessResult Finish(Object result) {
+      return Finish(Erlang.ExportAuto(result));
+    }
     public ProcessResult Finish(ErlNifTerm result) {
       var tuple = Erlang.MakeTuple2(Erlang.MakeAtom("finish"), result);
       return new ProcessResult(tuple);

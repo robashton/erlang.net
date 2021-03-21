@@ -15,7 +15,7 @@ namespace TestImpl.Tests
       switch(msg) {
         case Tuple<Atom, Pid, String, Byte[]> c when c.Item1 == "write": 
           Atom result = (Atom)Erlang.Modules.File.WriteFile(c.Item3, c.Item4);
-          Erlang.Send(c.Item2, Erlang.MakeAtom(result));
+          Erlang.Send(c.Item2, new Atom(result));
           break;
         case Tuple<Atom, String> cmd when cmd.Item1 == "open":
           Tuple <Atom, Pid> success = (Tuple<Atom,Pid>)Erlang.Modules.File.Open(cmd.Item2, new object[] { new Atom("write") } );
@@ -26,7 +26,7 @@ namespace TestImpl.Tests
           break;
         case Tuple<Atom, Pid> cmd when cmd.Item1 == "close":
           Erlang.Modules.File.Close(this.fileHandle);
-          Erlang.Send(cmd.Item2, Erlang.MakeAtom("ok"));
+          Erlang.Send(cmd.Item2, new Atom("ok"));
           break;
       }
       return ctx.NoReply();

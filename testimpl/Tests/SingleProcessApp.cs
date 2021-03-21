@@ -20,10 +20,10 @@ namespace TestImpl.Tests
         switch(msg) 
         {
           case Atom cmd when cmd == "bye": 
-            return ctx.Finish(Erlang.MakeAtom("ok"));
+            return ctx.Finish(new Atom("ok"));
 
           case Tuple<Atom, Pid, Atom> tuple when tuple.Item1 == "send_me":
-            Erlang.Send(tuple.Item2, Erlang.MakeAtom(tuple.Item3));
+            Erlang.Send(tuple.Item2, tuple.Item3);
             break;
 
           default:

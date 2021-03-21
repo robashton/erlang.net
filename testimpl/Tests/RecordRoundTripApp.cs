@@ -12,7 +12,7 @@ namespace TestImpl.Tests
       }
 
       ProcessResult WorkerLoopReceive(Process ctx, OurCoolRecord msg) {
-        Erlang.Send(msg.Owner, Erlang.ExportAuto(msg));
+        Erlang.Send(msg.Owner, msg);
         return ctx.Finish(Erlang.MakeAtom("ok"));
       }
     }

@@ -22,7 +22,7 @@ namespace TestImpl
       {
         if(msg.HasValue) {
           Console.WriteLine("C# received a message, allowing process to terminate \r");
-          return ctx.Finish(Erlang.MakeAtom("ok"));
+          return ctx.Finish(new Atom("ok"));
         } else {
           this.WaitCount++;
           Console.WriteLine("C# timed out waiting for message, receiving again \r");

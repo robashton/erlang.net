@@ -40,7 +40,7 @@ namespace TestImpl.Tests
     {
       GenServer.Stop(workerOne);
       GenServer.Stop(workerTwo);
-      return ctx.Finish(Erlang.MakeAtom("ok"));
+      return ctx.Finish(new Atom("ok"));
     }
   }
 }
