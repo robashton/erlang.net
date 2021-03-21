@@ -63,7 +63,6 @@ handle_info({call_fn, Caller, Args, Resource}, State = #state{ bridge = Bridge, 
                  State;
                error ->
                  Pid = spawn_link(fun() -> dispatch_loop(Caller) end),
-                 io:format(user, "Spawned a dispatch loop on pid ~p~n", [ Pid ]),
                  erlang:monitor(process, Caller),
                  Pid ! { '$$call_fn', Args, Resource },
                  State#state { caller_pool = maps:put(Caller, Pid, CallerPool) }
@@ -73,11 +72,9 @@ handle_info({call_fn, Caller, Args, Resource}, State = #state{ bridge = Bridge, 
 handle_info({'DOWN', _, _, Caller, _ }, State = #state{ caller_pool = CallerPool }) ->
   NewState = case maps:find(Caller, CallerPool) of
                {ok, Worker} ->
-                 io:format(user, "Killing worker with pid ~p because ~p died~n", [ Worker, Caller ]),
                  Worker ! '$$stop',
                  State#state { caller_pool = maps:remove(Caller, CallerPool) };
                error ->
-                 io:format(user, "Somehow received a monitor down for a caller that we don't know about?? ~n", []),
                  State
              end,
   {noreply, NewState};
@@ -86,7 +83,6 @@ handle_info({'EXIT', _, normal}, State = #state{ bridge = _Bridge }) ->
   {noreply, State};
 
 handle_info(_Other, State = #state{ bridge = _Bridge }) ->
-  io:format(user, "What ~p~n", [ _Other ]),
   {noreply, State}.
 
 terminate(normal, _State) ->

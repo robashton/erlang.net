@@ -51,7 +51,6 @@ tests() ->
            {_, C3_1, _, _ }
          ] = lists:sort(supervisor:which_children(Pid)),
 
-         io:format(user, "Sending arse to ~p ~n", [C1_1]),
          exit(C1_1, 'arse'),
 
          timer:sleep(500),

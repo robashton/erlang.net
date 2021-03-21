@@ -42,8 +42,6 @@ init([#{ init := Init
        , terminate := Terminate
        }, ActualOwnerPid]) ->
 
-  io:format(user, "Linking ~p to ~p", [ self(), ActualOwnerPid ]),
-
   link(ActualOwnerPid),
   {ok, Bridge } = dotnet_host_bridge:get_bridge(),
   case dotnet:erlang_callback(Bridge, Init, []) of
@@ -98,7 +96,6 @@ handle_cast(Msg, State = #state { handle_cast = HandleInfo
   end.
 
 terminate(_Reason, _State = #state { terminate = undefined }) ->
-  io:format(user, "Gen ~p terminating with reason ~p ~n", [ self(), _Reason ]),
   ok;
 
 terminate(Reason, _State = #state { bridge = Bridge, terminate = Terminate, ref = Ref }) ->
