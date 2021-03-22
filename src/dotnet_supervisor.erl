@@ -6,7 +6,7 @@
 -export([ init/1 ]).
 
 start_link(Name, Init) ->
-  supervisor:start_link(Name, ?MODULE, [Init]).
+  dotnet_proclib:start_link(Name, supervisor, { Name, dotnet_supervisor, [ Init ]}).
 
 init([Init]) ->
   {ok, Bridge } = dotnet_host_bridge:get_bridge(),
@@ -19,6 +19,3 @@ init([Init]) ->
 
       { ok,  WithoutUndefineds }
   end.
-
-
-

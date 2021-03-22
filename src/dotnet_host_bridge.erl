@@ -34,8 +34,6 @@ start_link(HostFxr) ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [HostFxr], []).
 
 init([HostFxr]) ->
-  process_flag(trap_exit, true),
-
   {ok, Bridge} = dotnet:create_bridge(HostFxr),
 
   ets:new(control, [set, protected, named_table]),
@@ -85,15 +83,21 @@ handle_info({'EXIT', _, normal}, State = #state{ bridge = _Bridge }) ->
 handle_info(_Other, State = #state{ bridge = _Bridge }) ->
   {noreply, State}.
 
-terminate(normal, _State) ->
+terminate(normal, State) ->
+  stop_dispatchers(State),
   ok;
 
-terminate(_Reason, _State) ->
-  io:format("wtf exit?? ~p ~n", [ _Reason ]),
+terminate(_Reason, State) ->
+  stop_dispatchers(State),
   ok.
 
 code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
+
+stop_dispatchers(State = #state { caller_pool = Pool }) ->
+  lists:foreach(fun(Pid) ->
+                    Pid ! '$$stop'
+                end, maps:values(Pool)).
 
 dispatch_loop(Owner) ->
   receive
@@ -103,5 +107,7 @@ dispatch_loop(Owner) ->
       dotnet:callback(Bridge, Resource, Result),
       dispatch_loop(Owner);
     '$$stop' -> ok;
-    Other -> Owner ! Other
+    Other ->
+      io:format(user, "proxying message ~p~n", [ Other ]),
+      Owner ! Other
   end.

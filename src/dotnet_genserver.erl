@@ -21,28 +21,18 @@
         }).
 
 start_link(Callbacks) ->
-  DispatchLoopPid = self(),
-  { ok, ActualOwnerPid } = dotnet_host_bridge:get_owner_of_dispatch(DispatchLoopPid),
-  { ok, StartedPid } = gen_server:start_link(?MODULE, [Callbacks, ActualOwnerPid], []),
-  unlink(StartedPid),
-  { ok, StartedPid }.
-
+  dotnet_proclib:start_link(?MODULE, [Callbacks]).
 
 start_link(Name, Callbacks) ->
-  DispatchLoopPid = self(),
-  { ok, ActualOwnerPid } = dotnet_host_bridge:get_owner_of_dispatch(DispatchLoopPid),
-  {ok, StartedPid } = gen_server:start_link(Name, ?MODULE, [Callbacks, ActualOwnerPid], []),
-  unlink(StartedPid),
-  { ok, StartedPid }.
+  dotnet_proclib:start_link(Name, ?MODULE, [Callbacks]).
 
 init([#{ init := Init
        , handleinfo := HandleInfo
        , handlecall := HandleCall
        , handlecast := HandleCast
        , terminate := Terminate
-       }, ActualOwnerPid]) ->
+       }]) ->
 
-  link(ActualOwnerPid),
   {ok, Bridge } = dotnet_host_bridge:get_bridge(),
   case dotnet:erlang_callback(Bridge, Init, []) of
     { ok, Ref } ->

@@ -41,7 +41,6 @@ tests() ->
          ?assert(is_pid(C1)),
          ?assert(is_pid(C2)),
          ?assert(is_pid(C3))
-
      end },
    { <<"one_for_all restarts all children">>,
      fun(Bridge) ->
