@@ -1,4 +1,3 @@
-
 using System;
 using CsLib;
 using System.Linq;
@@ -9,7 +8,9 @@ using System.Runtime.InteropServices;
 
 namespace CsLib.Erlang
 {
-  public sealed class Supervisor {
+  public sealed class Supervisor : SupervisorChild {
+    public Supervisor(String id, Func<Pid> init) : base(id, init) {}
+
     public static Pid StartLink(String id, Func<SupervisorConfig> init) {
 
       ErlangCallback initCallback = (ErlNifTerm args) => {
@@ -47,6 +48,8 @@ namespace CsLib.Erlang
     private record SupChild {
       public Atom Id { get; init;  }
       public Tuple<Atom, Atom, ErlNifTerm> Start { get; init; }
+      public Atom Type { get; init; }
+      public Atom Shutdown { get; init; }
     }
 
     internal ErlNifTerm ToErlNifTerm() {
@@ -62,11 +65,23 @@ namespace CsLib.Erlang
              Period = period
             }),
           Erlang.MakeList(
-            children.Select(c => Erlang.ExportAuto(new SupChild {
-                                                Id = new Atom(c.Id),
-                                                Start = Tuple.Create(new Atom("dotnet_shim"), new Atom("callback"), Erlang.MakeList( Erlang.MakeObjectReference(c.Init) ))
-                                              })
-                           ).ToArray()
+            children.Select(c => 
+              c switch {
+              SupervisorWorker worker => Erlang.ExportAuto(new SupChild {
+                                                Id = new Atom(worker.Id),
+                                                Start = Tuple.Create(new Atom("dotnet_shim"), new Atom("callback"), Erlang.MakeList( Erlang.MakeObjectReference(worker.Init) )),
+                                                Type = new Atom("worker"),
+                                                Shutdown = null
+                                              }),
+              Supervisor supervisor => Erlang.ExportAuto(new SupChild {
+                                                Id = new Atom(supervisor.Id),
+                                                Start = Tuple.Create(new Atom("dotnet_shim"), new Atom("callback"), Erlang.MakeList( Erlang.MakeObjectReference(supervisor.Init) )),
+                                                Type = new Atom("supervisor"),
+                                                Shutdown = new Atom("infinity")
+                                              }),
+
+              _ => throw new Exception("fuck off")
+              }).ToArray()
             ));
     }
 
