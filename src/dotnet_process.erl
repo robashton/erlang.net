@@ -3,11 +3,13 @@
 -export([ init/1 ]).
 
 init(Callback) ->
-  spawn_link(fun() ->
-                 { ok, Bridge } = dotnet_host_bridge:get_bridge(),
-                 Result = dotnet:erlang_callback(Bridge, Callback, undefined),
-                 loop(Bridge, Result)
-             end).
+  { ok, ActualOwnerPid } = dotnet_host_bridge:get_owner_of_dispatch(self()),
+  spawn(fun() ->
+            link(ActualOwnerPid),
+            { ok, Bridge } = dotnet_host_bridge:get_bridge(),
+            Result = dotnet:erlang_callback(Bridge, Callback, undefined),
+            loop(Bridge, Result)
+        end).
 
 loop(_, {finish, Return}) ->
   Return;

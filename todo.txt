@@ -7,8 +7,8 @@
 [x] Add supervisors..
 [x] test supervisor trees
 [x] Get rid of runtime/talk about getting rid of runtime
+[x] supervisors as supervision children
 
-- supervisors as supervision children
 - c# gen servers as erlang children
 - c# supervisors as erlang children
 - Fix the spin wait to use the enif shit
