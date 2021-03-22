@@ -8,9 +8,9 @@
 [x] test supervisor trees
 [x] Get rid of runtime/talk about getting rid of runtime
 [x] supervisors as supervision children
+[x] c# gen servers as erlang children
+[x] c# supervisors as erlang children
 
-- c# gen servers as erlang children
-- c# supervisors as erlang children
 - Fix the spin wait to use the enif shit
 - app.start should take args
 

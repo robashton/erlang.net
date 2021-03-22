@@ -22,6 +22,7 @@ all_test_() ->
                           , dotnet_code:tests()
                           , named_gen_servers:tests()
                           , supervisors:tests()
+                          , hosting_dotnet:tests()
                           ])).
 
 create_host() ->
