@@ -7,4 +7,9 @@ namespace CsLib
     {
       Object Start();
     }
+
+    public interface IApp<TArgs>
+    {
+      Object Start(TArgs args);
+    }
 }

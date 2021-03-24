@@ -6,7 +6,7 @@
 typedef void* GCHANDLE;
 
 typedef void (*return_gchandle_fn)(GCHANDLE handle);
-typedef ERL_NIF_TERM (*run_app_from_assembly_fn)(ErlNifEnv* env, GCHANDLE handle, const char_t* assemblyName, const char_t* typeName);
+typedef ERL_NIF_TERM (*run_app_from_assembly_fn)(ErlNifEnv* env, GCHANDLE handle, const char_t* assemblyName, const char_t* typeName, ERL_NIF_TERM args);
 typedef ERL_NIF_TERM (*erlang_callback_fn)(ErlNifEnv* env, GCHANDLE handle, ERL_NIF_TERM fn, ERL_NIF_TERM args);
 
 typedef struct bridge_context_ {

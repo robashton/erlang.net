@@ -188,7 +188,7 @@ static ERL_NIF_TERM run_app_from_assembly(ErlNifEnv* env, int argc, const ERL_NI
   if(!enif_get_string(env, argv[1], assemblyName, MAX_PATH, ERL_NIF_LATIN1)) { return param_error(env, "assemblyName"); }
   if(!enif_get_string(env, argv[2], typeName, MAX_PATH, ERL_NIF_LATIN1)) { return param_error(env, "typeName"); }
 
-  ERL_NIF_TERM result = context->run_app_from_assembly(env, context->gchandle, assemblyName, typeName);
+  ERL_NIF_TERM result = context->run_app_from_assembly(env, context->gchandle, assemblyName, typeName, argv[3]);
 
   if(result) {
     return result;
@@ -239,7 +239,7 @@ static ErlNifFunc nif_funcs[] =
   // happen from C#, but you'd need to flag whether each callback was CPU/IO bound at point of writing them in C# and .. boy oh no
   // The correct way to do Erlang.NET is to just implement the protocol, and call library fns via messages, but that's effort and let's face it
   // only 5 developers would be interested and 2 of them would be asking me to write it in F#
-  {"run_app_from_assembly", 3, run_app_from_assembly, ERL_NIF_DIRTY_JOB_CPU_BOUND},
+  {"run_app_from_assembly", 4, run_app_from_assembly, ERL_NIF_DIRTY_JOB_CPU_BOUND},
   {"callback", 3, callback, ERL_NIF_DIRTY_JOB_CPU_BOUND},
   {"erlang_callback", 3, erlang_callback, ERL_NIF_DIRTY_JOB_CPU_BOUND},
 };

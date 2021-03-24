@@ -17,15 +17,15 @@ namespace CsLib
     {
       public IntPtr handle;
       public delegate* <IntPtr, ErlNifTerm> @return;
-      public delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm> load_assembly;
+      public delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm, ErlNifTerm> load_assembly;
       public delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm> erlang_callback;
     }
 
     private delegate ErlNifTerm ReturnDelegate(IntPtr handle);
-    private delegate ErlNifTerm LoadAssemblyDelegate(ErlNifEnv env, IntPtr bridge, IntPtr assemblyName, IntPtr bridgeName);
+    private delegate ErlNifTerm LoadAssemblyDelegate(ErlNifEnv env, IntPtr bridge, IntPtr assemblyName, IntPtr bridgeName, ErlNifTerm args);
     private delegate ErlNifTerm ErlangCallbackDelegate(ErlNifEnv nev, IntPtr bridge, ErlNifTerm callback, ErlNifTerm args);
 
-    IApp runningApp;
+    Object runningApp;
 
     ReturnDelegate @return;
     LoadAssemblyDelegate load_assembly;
@@ -66,14 +66,14 @@ namespace CsLib
       var handle = GCHandle.Alloc(instance);
       args->handle = GCHandle.ToIntPtr(handle);
       args->@return = (delegate* <IntPtr, ErlNifTerm>)Marshal.GetFunctionPointerForDelegate(instance.@return);
-      args->load_assembly = (delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm>) Marshal.GetFunctionPointerForDelegate(instance.load_assembly);
+      args->load_assembly = (delegate* <ErlNifEnv, IntPtr, IntPtr, IntPtr, ErlNifTerm, ErlNifTerm>) Marshal.GetFunctionPointerForDelegate(instance.load_assembly);
       args->erlang_callback = (delegate* <ErlNifEnv, IntPtr, ErlNifTerm, ErlNifTerm, ErlNifTerm>) Marshal.GetFunctionPointerForDelegate(instance.erlang_callback);
 
       return 0;
     }
 
-    static ErlNifTerm LoadAssemblyWrapper(ErlNifEnv env, IntPtr bridge, IntPtr assemblyName, IntPtr typeName) {
-      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName), Marshal.PtrToStringAuto(typeName));
+    static ErlNifTerm LoadAssemblyWrapper(ErlNifEnv env, IntPtr bridge, IntPtr assemblyName, IntPtr typeName, ErlNifTerm args) {
+      var res = ((Bridge)(GCHandle.FromIntPtr(bridge).Target)).LoadAssembly(env, Marshal.PtrToStringAuto(assemblyName), Marshal.PtrToStringAuto(typeName), args);
       return res;
     }
     
@@ -95,27 +95,47 @@ namespace CsLib
      });
     }
 
-    public ErlNifTerm LoadAssembly(ErlNifEnv env, String filepath, String typeName)
+    public ErlNifTerm LoadAssembly(ErlNifEnv env, String filepath, String typeName, ErlNifTerm args)
     {
       return E.WithEnv(env, () => {
         AssemblyName assemblyName = AssemblyName.GetAssemblyName(filepath);
         Assembly assembly = Assembly.Load(assemblyName);
 
-
         var appType = assembly.GetExportedTypes()
-          .FirstOrDefault(t => t.GetInterface(typeof(IApp).Name) != null && t.FullName == typeName);
+              .Where(t => t.FullName == typeName)
+              .FirstOrDefault();
 
         if (appType == null) {
-          return E.MakeAtom("enoent");
+          return E.MakeTuple2(E.MakeAtom("error"), E.MakeAtom("enoent"));
+        }
+
+        var withArgs = appType.GetInterfaces()
+                            .Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == (typeof(IApp<>)))
+                            .FirstOrDefault();
+
+        var withVoid = appType.GetInterfaces()
+                            .Where(x => x.Name == typeof(IApp).Name)
+                            .FirstOrDefault();
+
+        if(withVoid == null && withArgs == null) {
+          return E.MakeTuple2(E.MakeAtom("error"), E.MakeAtom("interface_missing"));
         }
 
         var ctor = appType.GetConstructor(Type.EmptyTypes);
+        this.runningApp = ctor.Invoke(new object[]{});
 
-        this.runningApp = (IApp)ctor.Invoke(new object[]{});
+        if(withVoid != null) {
+           var term = ((IApp)this.runningApp).Start();
+           return E.MakeTuple2(E.MakeAtom("ok"), E.ExportAuto(term));
 
-        var term = this.runningApp.Start();
-
-        return E.MakeTuple2(E.MakeAtom("ok"), E.ExportAuto(term));
+        } else {
+          var argType = withArgs.GetGenericArguments()[0];
+          var method = withArgs.GetMethod("Start");
+          var input = E.Coerce(args, argType);
+          
+          var term = method.Invoke(this.runningApp, new object[] { input });
+          return E.MakeTuple2(E.MakeAtom("ok"), E.ExportAuto(term));
+        }
       });
     }
   }

@@ -4,6 +4,7 @@
 
 -define(test_assembly, "priv/testimpl.dll").
 -define(single_process_app, "TestImpl.Tests.SingleProcessApp").
+-define(adding_app, "TestImpl.Tests.AddingApp").
 
 -export([tests/0]).
 
@@ -43,5 +44,10 @@ tests() ->
            Msg ->
              ?assertMatch({'DOWN', Reference, process, Pid, _}, Msg)
          end
+     end },
+   { <<"A C# process that adds two numbers together">>,
+     fun(Bridge) ->
+         { ok, Result } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?adding_app, #{ x => 1, y => 2 }),
+         ?assertEqual(3, Result)
      end }
   ].
