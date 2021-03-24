@@ -209,7 +209,7 @@ static ERL_NIF_TERM callback(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]
   if(!enif_get_resource(env, argv[1], globals->callback_resource, (void**)&callback_resource)) { return param_error(env, "callback_resource"); }
 
   callback_resource->result = argv[2];
-  callback_resource->complete = 1;
+  enif_cond_signal(callback_resource->condition);
 
   return enif_make_atom(env, "ok");
 }

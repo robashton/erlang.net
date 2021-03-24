@@ -46,7 +46,7 @@ typedef struct pointer_resource_ {
 } pointer_resource;
 
 typedef struct callback_resource_ {
-  uint8_t complete;
+  ErlNifCond* condition;
   ERL_NIF_TERM result;
 } callback_resource;
 
