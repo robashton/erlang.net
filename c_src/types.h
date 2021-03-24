@@ -47,6 +47,7 @@ typedef struct pointer_resource_ {
 
 typedef struct callback_resource_ {
   ErlNifCond* condition;
+  ErlNifEnv* env;
   ERL_NIF_TERM result;
 } callback_resource;
 

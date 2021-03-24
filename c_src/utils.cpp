@@ -16,8 +16,9 @@ ERL_NIF_TERM call_erlang_fn(ErlNifEnv* env, ERL_NIF_TERM mfa) {
   callback_resource* callback = (callback_resource*)enif_alloc_resource(globals->callback_resource, sizeof(callback_resource));
   memset(callback, 0, sizeof(callback_resource));
   
-  callback->condition =  enif_cond_create("call_fn_wait");
-  ErlNifMutex* wait_mutex = enif_mutex_create("call_fn_mutex");
+  callback->condition =  enif_cond_create((char*)"call_fn_wait");
+  ErlNifMutex* wait_mutex = enif_mutex_create((char*)"call_fn_mutex");
+  callback->env = env;
 
   // We'll not release it, cos Erlang will think it's finished with as soon as the callback is invoked
   ERL_NIF_TERM resource = enif_make_resource(env, callback);
@@ -31,10 +32,10 @@ ERL_NIF_TERM call_erlang_fn(ErlNifEnv* env, ERL_NIF_TERM mfa) {
         resource)
       );
 
+  // Effectively a spin wait
   enif_cond_wait(callback->condition, wait_mutex);
 
-  // TODO: This probably needs copying into our env?
-  // as it originally came from our 'dotnethost_control' process
+  // This result has already been copied into our env so we're good
   ERL_NIF_TERM result = callback->result;
 
   // Now we can clear that resource up
