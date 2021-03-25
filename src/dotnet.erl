@@ -11,13 +11,20 @@
 -on_load(init/0).
 
 load_hostfxr() ->
-  load_hostfxr_impl("priv/erlang.runtimeconfig.json").
+  Priv = code:priv_dir(dotnet),
+  load_hostfxr_impl(filename:join(Priv, "Erlang.runtimeconfig.json")).
+
+
+create_bridge(HostFxr) ->
+  File = filename:join(code:priv_dir(dotnet), "Erlang.dll"),
+  create_bridge(HostFxr, File).
+
 
 init() ->
   File = filename:join(code:priv_dir(dotnet), liberldotnet),
   ok = erlang:load_nif(File, 0).
 
-create_bridge(_HostFxr) ->
+create_bridge(_HostFxr, _DllPath) ->
   erlang:nif_error("Nif not loaded").
 
 run_app_from_assembly(Bridge, AssemblyName, TypeName) ->

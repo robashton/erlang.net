@@ -149,13 +149,14 @@ static ERL_NIF_TERM load_hostfxr(ErlNifEnv* env, int argc, const ERL_NIF_TERM ar
 static ERL_NIF_TERM create_bridge(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) {
   nif_globals* globals = (nif_globals*)(enif_priv_data(env));
   hostfxr_resource* hostfxr;
-
+  char dllPath[MAX_PATH];
   int rc = 0;
   if(!enif_get_resource(env, argv[0], globals->hostfxr_resource, (void**)&hostfxr)) { return param_error(env, "hostfxr"); }
+  if(!enif_get_string(env, argv[1], dllPath, MAX_PATH, ERL_NIF_LATIN1)) { return param_error(env, "dllPath"); }
 
   component_entry_point_fn fn;
 
-  if(rc = hostfxr->load_assembly_and_get_function_pointer("priv/cslib.dll", "CsLib.Bridge, CsLib", "Create", NULL, NULL, (void**)&fn)) {
+  if(rc = hostfxr->load_assembly_and_get_function_pointer(dllPath, "Erlang.Internal.Bridge, Erlang", "Create", NULL, NULL, (void**)&fn)) {
     TRACE("Sad trombone %d \n", rc);
     return enif_make_atom(env, "nope");
   }
@@ -228,7 +229,7 @@ static ERL_NIF_TERM erlang_callback(ErlNifEnv* env, int argc, const ERL_NIF_TERM
 static ErlNifFunc nif_funcs[] =
 {
   {"load_hostfxr_impl", 1, load_hostfxr},
-  {"create_bridge", 1, create_bridge},
+  {"create_bridge", 2, create_bridge},
 
   // so... if you're reading this it probably means you were wondering 'how is Rob tying Erlang together with C#'
   // and now you're thinking "Oh god he did it as a nif what a monster doesn't he know about the scheduler?!!?!'
