@@ -11,7 +11,7 @@
 -on_load(init/0).
 
 load_hostfxr() ->
-  load_hostfxr_impl("priv/cslib.runtimeconfig.json").
+  load_hostfxr_impl("priv/erlang.runtimeconfig.json").
 
 init() ->
   File = filename:join(code:priv_dir(dotnet), liberldotnet),

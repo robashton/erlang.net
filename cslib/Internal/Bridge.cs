@@ -1,14 +1,13 @@
 using System;
-using CsLib.Erlang;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Reflection;
 using System.Linq;
 using System.IO;
 
-using E = CsLib.Erlang.Erlang;
+using Erlang;
 
-namespace CsLib
+namespace Erlang.Internal
 {
   public class Bridge {
     
@@ -42,7 +41,7 @@ namespace CsLib
 
       public override void WriteLine(string value)
       {
-        E.WriteDebug(value);
+        Erl.WriteDebug(value);
       }
     }
 
@@ -89,15 +88,15 @@ namespace CsLib
 
     public ErlNifTerm ErlangCallback(ErlNifEnv env, ErlNifTerm fn, ErlNifTerm args)
     {
-      return E.WithEnv(env, () => {
-        ErlangCallback callback = (ErlangCallback)E.GetObjectReference(fn);
+      return Erl.WithEnv(env, () => {
+        ErlangCallback callback = (ErlangCallback)Erl.GetObjectReference(fn);
         return callback(args);
      });
     }
 
     public ErlNifTerm LoadAssembly(ErlNifEnv env, String filepath, String typeName, ErlNifTerm args)
     {
-      return E.WithEnv(env, () => {
+      return Erl.WithEnv(env, () => {
         AssemblyName assemblyName = AssemblyName.GetAssemblyName(filepath);
         Assembly assembly = Assembly.Load(assemblyName);
 
@@ -106,7 +105,7 @@ namespace CsLib
               .FirstOrDefault();
 
         if (appType == null) {
-          return E.MakeTuple2(E.MakeAtom("error"), E.MakeAtom("enoent"));
+          return Erl.MakeTuple2(Erl.MakeAtom("error"), Erl.MakeAtom("enoent"));
         }
 
         var withArgs = appType.GetInterfaces()
@@ -118,7 +117,7 @@ namespace CsLib
                             .FirstOrDefault();
 
         if(withVoid == null && withArgs == null) {
-          return E.MakeTuple2(E.MakeAtom("error"), E.MakeAtom("interface_missing"));
+          return Erl.MakeTuple2(Erl.MakeAtom("error"), Erl.MakeAtom("interface_missing"));
         }
 
         var ctor = appType.GetConstructor(Type.EmptyTypes);
@@ -126,15 +125,15 @@ namespace CsLib
 
         if(withVoid != null) {
            var term = ((IApp)this.runningApp).Start();
-           return E.MakeTuple2(E.MakeAtom("ok"), E.ExportAuto(term));
+           return Erl.MakeTuple2(Erl.MakeAtom("ok"), Erl.ExportAuto(term));
 
         } else {
           var argType = withArgs.GetGenericArguments()[0];
           var method = withArgs.GetMethod("Start");
-          var input = E.Coerce(args, argType);
+          var input = Erl.Coerce(args, argType);
           
           var term = method.Invoke(this.runningApp, new object[] { input });
-          return E.MakeTuple2(E.MakeAtom("ok"), E.ExportAuto(term));
+          return Erl.MakeTuple2(Erl.MakeAtom("ok"), Erl.ExportAuto(term));
         }
       });
     }

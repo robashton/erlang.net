@@ -1,8 +1,7 @@
 using System;
-using CsLib.Erlang;
-using CsLib;
+using Erlang;
 
-using InfoMsg = System.Tuple<System.String, CsLib.Erlang.Pid>;
+using InfoMsg = System.Tuple<System.String, Erlang.Pid>;
 using CallMsg = System.Object;
 
 namespace TestImpl.Tests

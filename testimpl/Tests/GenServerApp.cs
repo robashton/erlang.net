@@ -1,8 +1,7 @@
 using System;
-using CsLib;
-using CsLib.Erlang;
+using Erlang;
 
-using InfoMsg = System.Tuple<System.String, CsLib.Erlang.Pid>;
+using InfoMsg = System.Tuple<System.String, Erlang.Pid>;
 using CallMsg = System.Object;
 
 namespace TestImpl.Tests
@@ -41,7 +40,7 @@ namespace TestImpl.Tests
 
     public TerminateResult Terminate(TerminateContext ctx, Atom reason) {
       if(this.owner.HasValue) {
-        Erlang.Send(this.owner, new Atom("bye"));
+        Erl.Send(this.owner, new Atom("bye"));
       }
       return ctx.Ok();
     }
@@ -49,10 +48,10 @@ namespace TestImpl.Tests
     private void HandleInfoImpl(InfoMsg msg) {
       switch(msg) {
         case ( "hello bob", _ ): 
-          Erlang.Send(msg.Item2, "hello joe");
+          Erl.Send(msg.Item2, "hello joe");
           break;
         case ( _, _ ): 
-          Erlang.Send(msg.Item2, "boobs");
+          Erl.Send(msg.Item2, "boobs");
           break;
       }
     }

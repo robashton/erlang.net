@@ -5,13 +5,14 @@ using System.Threading;
 using System.Text;
 using System.Reflection;
 using System.Linq;
-using CsLib;
 
-namespace CsLib.Erlang
+using Erlang.Internal;
+
+namespace Erlang
 {
   public delegate ErlNifTerm ErlangCallback(ErlNifTerm args);
 
-  public unsafe static class Erlang
+  public unsafe static class Erl
   {
     private static ThreadLocal<ErlNifEnv> env = new();
 
@@ -29,9 +30,9 @@ namespace CsLib.Erlang
       try {
         return cb();
       } catch (TermException ex) {
-        return Erlang.ExportAuto(Tuple.Create(new Atom("error"), ex.Term));
+        return Erl.ExportAuto(Tuple.Create(new Atom("error"), ex.Term));
       } catch (Exception ex) {
-        return Erlang.ExportAuto(Tuple.Create(new Atom("error"), ex.Message));
+        return Erl.ExportAuto(Tuple.Create(new Atom("error"), ex.Message));
       } finally {
         env.Value = ErlNifEnv.Zero;
       }

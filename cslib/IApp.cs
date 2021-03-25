@@ -1,7 +1,6 @@
 ﻿using System;
-using CsLib.Erlang;
 
-namespace CsLib
+namespace Erlang
 {
     public interface IApp
     {

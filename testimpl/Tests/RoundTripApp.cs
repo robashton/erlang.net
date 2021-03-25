@@ -1,6 +1,5 @@
 ﻿using System;
-using CsLib.Erlang;
-using CsLib;
+using Erlang;
 
 namespace TestImpl.Tests
 {
@@ -20,39 +19,39 @@ namespace TestImpl.Tests
         switch(msg) 
         {
           case Tuple<Pid, Atom> tuple:
-            Erlang.Send(tuple.Item1, tuple.Item2);
+            Erl.Send(tuple.Item1, tuple.Item2);
             break;
 
           case Tuple<Pid, Int32> tuple:
-            Erlang.Send(tuple.Item1, tuple.Item2);
+            Erl.Send(tuple.Item1, tuple.Item2);
             break;
 
           case Tuple<Pid, Int64> tuple:
-            Erlang.Send(tuple.Item1, tuple.Item2);
+            Erl.Send(tuple.Item1, tuple.Item2);
             break;
 
           case Tuple<Pid, String> tuple:
-            Erlang.Send(tuple.Item1, tuple.Item2);
+            Erl.Send(tuple.Item1, tuple.Item2);
             break;
             
           case Tuple<Pid, Pid> tuple:
-            Erlang.Send(tuple.Item1, tuple.Item2);
+            Erl.Send(tuple.Item1, tuple.Item2);
             break;
 
           case Tuple<Pid, Tuple<Int32, Int32>> tuple:
-            Erlang.Send(tuple.Item1, tuple.Item2); 
+            Erl.Send(tuple.Item1, tuple.Item2); 
             break;
 
           case Tuple<Pid, Tuple<Int32, String>> tuple:
-            Erlang.Send(tuple.Item1, tuple.Item2);
+            Erl.Send(tuple.Item1, tuple.Item2);
             break;
 
           case Tuple<Pid, Tuple<Int32, Int32, Int32>> tuple:
-            Erlang.Send(tuple.Item1, tuple.Item2); 
+            Erl.Send(tuple.Item1, tuple.Item2); 
             break;
 
           case Tuple<Pid, Tuple<Int32, String, Pid>> tuple:
-            Erlang.Send(tuple.Item1, tuple.Item2); 
+            Erl.Send(tuple.Item1, tuple.Item2); 
             break;
 
           default:

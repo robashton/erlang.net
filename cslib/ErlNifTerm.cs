@@ -1,8 +1,7 @@
 using System;
-using CsLib;
 using System.Runtime.InteropServices;
 
-namespace CsLib.Erlang
+namespace Erlang
 {
   [StructLayout(LayoutKind.Sequential)]
   public readonly struct ErlNifTerm

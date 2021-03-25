@@ -1,9 +1,7 @@
 using System;
-using CsLib;
-
 using System.Runtime.InteropServices;
 
-namespace CsLib.Erlang
+namespace Erlang
 {
   public sealed class Process
   {
@@ -14,42 +12,42 @@ namespace CsLib.Erlang
         var processResult = init(new Process());
         return processResult.Native;
       };
-      return Erlang.Modules.DotnetProcess.Init(del); 
+      return Erl.Modules.DotnetProcess.Init(del); 
     }
 
 
     public ProcessResult Receive<T>(Func<Process, T, ProcessResult> callback) {
       ErlangCallback del = (ErlNifTerm obj) => {
-        T converted = Erlang.Coerce<T>(obj);
+        T converted = Erl.Coerce<T>(obj);
         var processResult = callback(new Process(), converted);
         return processResult.Native;
       };
       
-      var resource = Erlang.MakeObjectReference(del);
-      var tuple = Erlang.MakeTuple2( Erlang.MakeAtom("receive"), resource);
+      var resource = Erl.MakeObjectReference(del);
+      var tuple = Erl.MakeTuple2( Erl.MakeAtom("receive"), resource);
       return new ProcessResult(tuple);
     }
 
     public ProcessResult Receive<T>(int timeout, Func<Process, T, ProcessResult> callback) {
       ErlangCallback del = (ErlNifTerm obj) => {
-        T converted = Erlang.Coerce<T>(obj);
+        T converted = Erl.Coerce<T>(obj);
         var processResult = callback(new Process(), converted);
         return processResult.Native;
       };
       
-      var resource = Erlang.MakeObjectReference(del);
-      var tuple = Erlang.MakeTuple3(
-                    Erlang.MakeAtom("receive"),
-                    Erlang.MakeInt(timeout),
+      var resource = Erl.MakeObjectReference(del);
+      var tuple = Erl.MakeTuple3(
+                    Erl.MakeAtom("receive"),
+                    Erl.MakeInt(timeout),
                     resource);
       return new ProcessResult(tuple);
     }
 
     public ProcessResult Finish(Object result) {
-      return Finish(Erlang.ExportAuto(result));
+      return Finish(Erl.ExportAuto(result));
     }
     public ProcessResult Finish(ErlNifTerm result) {
-      var tuple = Erlang.MakeTuple2(Erlang.MakeAtom("finish"), result);
+      var tuple = Erl.MakeTuple2(Erl.MakeAtom("finish"), result);
       return new ProcessResult(tuple);
     }
   }

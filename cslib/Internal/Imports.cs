@@ -2,7 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace CsLib.Erlang
+namespace Erlang.Internal
 {
   internal static class Imports {
 

@@ -8,9 +8,9 @@ else
 	ERLDIR = $(_KERL_ACTIVE_DIR)
 endif
 
-CONFIGURATION=Debug
+CONFIGURATION=Release
 
-all: nifs priv/testimpl.dll priv/cslib.dll priv/cslib.runtimeconfig.json
+all: nifs priv/testimpl.dll priv/Erlang.dll priv/Erlang.runtimeconfig.json
 
 priv/:
 	mkdir -p priv/
@@ -22,22 +22,22 @@ c_src/%.o: c_src/%.cpp c_src/*.h c_src/*.cpp | priv/
 priv/liberldotnet.so: c_src/dotnet.o c_src/dotnet_exports.o c_src/utils.o
 	gcc -o $@ $^ -shared -fPIC -L $(DOTNET_LOCATION) -L$(ERLDIR)/usr/lib -lstdc++ -lnethost -lei -ldl
 
-priv/cslib.dll: cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll
+priv/Erlang.dll: cslib/bin/$(CONFIGURATION)/net5.0/Erlang.dll
 	cp $< $@
 
 priv/testimpl.dll: testimpl/bin/$(CONFIGURATION)/net5.0/testimpl.dll
 	cp $< $@
 
-priv/cslib.runtimeconfig.json: cslib/bin/$(CONFIGURATION)/net5.0/cslib.runtimeconfig.json
+priv/Erlang.runtimeconfig.json: cslib/bin/$(CONFIGURATION)/net5.0/Erlang.runtimeconfig.json
 	cp $< $@
 
-cslib/bin/$(CONFIGURATION)/net5.0/cslib.runtimeconfig.json: cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll
+Erlang/bin/$(CONFIGURATION)/net5.0/Erlang.runtimeconfig.json: Erlang/bin/$(CONFIGURATION)/net5.0/Erlang.dll
 
-cslib/bin/$(CONFIGURATION)/net5.0/cslib.dll: cslib/*.cs cslib/*/*.cs cslib/cslib.csproj
-	cd cslib && dotnet build
+Erlang/bin/$(CONFIGURATION)/net5.0/Erlang.dll: cslib/*.cs cslib/*/*.cs cslib/Erlang.csproj
+	cd cslib && dotnet build -c $(CONFIGURATION)
 
 testimpl/bin/$(CONFIGURATION)/net5.0/testimpl.dll: testimpl/*.cs testimpl/*/*.cs testimpl/testimpl.csproj
-	cd testimpl && dotnet build
+	cd testimpl && dotnet build -c $(CONFIGURATION)
 
 nifs: $(addprefix priv/, $(addsuffix .so, $(NIFS)))
 

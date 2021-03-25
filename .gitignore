@@ -44,6 +44,7 @@ priv/www/dev.*
 .vscode
 *.code-workspace
 Debug
+Release
 obj
 cslib.dll
 testimpl.dll

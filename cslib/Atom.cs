@@ -1,7 +1,6 @@
 using System;
-using CsLib;
 
-namespace CsLib.Erlang
+namespace Erlang
 {
   public class Atom 
   {

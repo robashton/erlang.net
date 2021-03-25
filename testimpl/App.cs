@@ -1,6 +1,5 @@
 ﻿using System;
-using CsLib;
-using CsLib.Erlang;
+using Erlang;
 
 namespace TestImpl
 {

@@ -1,6 +1,5 @@
 ﻿using System;
-using CsLib.Erlang;
-using CsLib;
+using Erlang;
 
 namespace TestImpl.Tests
 {
@@ -12,8 +11,8 @@ namespace TestImpl.Tests
       }
 
       ProcessResult WorkerLoopReceive(Process ctx, OurCoolRecord msg) {
-        Erlang.Send(msg.Owner, msg);
-        return ctx.Finish(Erlang.MakeAtom("ok"));
+        Erl.Send(msg.Owner, msg);
+        return ctx.Finish(Erl.MakeAtom("ok"));
       }
     }
 

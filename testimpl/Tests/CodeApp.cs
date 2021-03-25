@@ -1,6 +1,5 @@
 using System;
-using CsLib.Erlang;
-using CsLib;
+using Erlang;
 
 namespace TestImpl.Tests
 {
@@ -14,19 +13,19 @@ namespace TestImpl.Tests
     public HandleInfoResult HandleInfo(HandleInfoContext ctx, Object msg) {
       switch(msg) {
         case Tuple<Atom, Pid, String, Byte[]> c when c.Item1 == "write": 
-          Atom result = (Atom)Erlang.Modules.File.WriteFile(c.Item3, c.Item4);
-          Erlang.Send(c.Item2, new Atom(result));
+          Atom result = (Atom)Erl.Modules.File.WriteFile(c.Item3, c.Item4);
+          Erl.Send(c.Item2, new Atom(result));
           break;
         case Tuple<Atom, String> cmd when cmd.Item1 == "open":
-          Tuple <Atom, Pid> success = (Tuple<Atom,Pid>)Erlang.Modules.File.Open(cmd.Item2, new object[] { new Atom("write") } );
+          Tuple <Atom, Pid> success = (Tuple<Atom,Pid>)Erl.Modules.File.Open(cmd.Item2, new object[] { new Atom("write") } );
           this.fileHandle = success.Item2;
           break;
         case Tuple<Atom, byte[]> cmd when cmd.Item1 == "write":
-          Erlang.Modules.File.Write(this.fileHandle, cmd.Item2);
+          Erl.Modules.File.Write(this.fileHandle, cmd.Item2);
           break;
         case Tuple<Atom, Pid> cmd when cmd.Item1 == "close":
-          Erlang.Modules.File.Close(this.fileHandle);
-          Erlang.Send(cmd.Item2, new Atom("ok"));
+          Erl.Modules.File.Close(this.fileHandle);
+          Erl.Send(cmd.Item2, new Atom("ok"));
           break;
       }
       return ctx.NoReply();

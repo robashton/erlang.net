@@ -1,6 +1,5 @@
 ﻿using System;
-using CsLib;
-using CsLib.Erlang;
+using Erlang;
 
 namespace TestImpl.Tests
 {
@@ -23,7 +22,7 @@ namespace TestImpl.Tests
             return ctx.Finish(new Atom("ok"));
 
           case Tuple<Atom, Pid, Atom> tuple when tuple.Item1 == "send_me":
-            Erlang.Send(tuple.Item2, tuple.Item3);
+            Erl.Send(tuple.Item2, tuple.Item3);
             break;
 
           default:

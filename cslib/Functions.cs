@@ -7,9 +7,8 @@ using System.Threading;
 using System.Text;
 using System.Reflection;
 using System.Linq;
-using CsLib;
 
-namespace CsLib.Erlang
+namespace Erlang
 {
   public sealed class Functions : DynamicObject
   {
@@ -20,8 +19,8 @@ namespace CsLib.Erlang
     }
     
     public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result) {
-      ErlNifTerm term = Erlang.CallErlangFn(DotNetToErlang(moduleName), DotNetToErlang(binder.Name), args.Select(x => Erlang.ExportAuto(x)).ToArray());
-      result = Erlang.ExtractAuto(term);
+      ErlNifTerm term = Erl.CallErlangFn(DotNetToErlang(moduleName), DotNetToErlang(binder.Name), args.Select(x => Erl.ExportAuto(x)).ToArray());
+      result = Erl.ExtractAuto(term);
       if(result != null) { return true; }
       return false;
     }
