@@ -11,8 +11,14 @@
 -on_load(init/0).
 
 load_hostfxr() ->
-  Priv = code:priv_dir(dotnet),
-  load_hostfxr_impl(filename:join(Priv, "Erlang.runtimeconfig.json")).
+  RuntimeConfig = case application:get_env('runtime_config') of
+                    undefined ->
+                      Priv = code:priv_dir(dotnet),
+                      filename:join(Priv, "Erlang.runtimeconfig.json");
+                    { ok, Other } ->
+                      Other
+                  end,
+  load_hostfxr_impl(RuntimeConfig),
 
 
 create_bridge(HostFxr) ->
