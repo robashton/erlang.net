@@ -57,8 +57,8 @@ with_bridge(Tests) ->
                     fun() -> start_bridge(HostFxr) end,
                     fun stop_bridge/1,
                     lists:map(fun ({Name, Test}) ->
-                                  fun({_, Bridge}) ->
-                                      [ { Name,  fun() -> Test(Bridge) end  } ]
+                                  fun({_Pid, _Bridge}) ->
+                                      [ { Name,  fun() -> Test() end  } ]
                                   end
                               end, Tests)
                    }]

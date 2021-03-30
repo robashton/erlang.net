@@ -7,8 +7,8 @@
 -define(test_assembly, "priv/testimpl.dll").
 -define(round_trip_app, "TestImpl.Tests.RoundTripApp").
 
-round_trip(Bridge, Term) ->
-  { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?round_trip_app),
+round_trip(Term) ->
+  { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?round_trip_app),
   Pid ! { self(), Term },
   receive
     M -> ?assertEqual(Term, M)
@@ -17,7 +17,7 @@ round_trip(Bridge, Term) ->
 
 tests() ->
   lists:map(fun({Name, Term}) ->
-                { Name, fun(Bridge) -> round_trip(Bridge, Term) end }
+                { Name, fun() -> round_trip(Term) end }
             end,
             [ { <<"Round trip an Atom">>, hi },
               { <<"Round trip an Int32">>, 1337 },

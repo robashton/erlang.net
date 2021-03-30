@@ -10,9 +10,7 @@ callback(Cb) ->
   dotnet:erlang_callback(Bridge, Cb, []).
 
 start_link(Assembly, Module) ->
-  {ok, Bridge} = dotnet_host_bridge:get_bridge(),
-  dotnet:run_app_from_assembly(Bridge, Assembly, Module).
+  dotnet:run_app_from_assembly(Assembly, Module).
 
 start_link(Assembly, Module, Args) ->
-  {ok, Bridge} = dotnet_host_bridge:get_bridge(),
-  dotnet:run_app_from_assembly(Bridge, Assembly, Module, Args).
+  dotnet:run_app_from_assembly(Assembly, Module, Args).

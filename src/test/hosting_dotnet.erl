@@ -10,13 +10,13 @@
 tests() ->
   [
    { <<"Run a supervisor from an assembly">>,
-     fun(Bridge) ->
+     fun() ->
          {ok, Pid } = supervisor:start_link(?MODULE, []),
          Child = whereis('primary-sup'),
          ?assert(is_pid(Child))
      end },
    { <<"Run a gen server from an assembly">>,
-     fun(Bridge) ->
+     fun() ->
          {ok, Pid } = supervisor:start_link(?MODULE, []),
 
          [ {_, Gen, _, _} | _ ]  = lists:sort(supervisor:which_children(Pid)),

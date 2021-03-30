@@ -10,19 +10,19 @@
 tests() ->
   [
    { <<"Can start a supervisor">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
          ?assert(is_pid(Pid))
      end },
    { <<"Supervisor is named correctly">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
          NamedPid = whereis('primary-sup'),
          ?assertEqual(Pid, NamedPid)
      end },
    { <<"Supervisor has children with the names that they chose">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
          C1 = whereis('genserver-one'),
          C2 = whereis('genserver-two'),
          C3 = whereis('genserver-three'),
@@ -31,8 +31,8 @@ tests() ->
          ?assert(is_pid(C3))
      end },
    { <<"Supervisor has running children with correct ids">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
          [ {'c1', C1, _, _ },
            {'c2', C2, _, _ },
            {'c3', C3, _, _ },
@@ -45,8 +45,8 @@ tests() ->
          ?assert(is_pid(S1))
      end },
    { <<"one_for_all restarts all children">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
          [ {_, C1_1, _, _ },
            {_, C2_1, _, _ },
            {_, C3_1, _, _ },
@@ -73,8 +73,8 @@ tests() ->
          ?assertNotEqual(S1_1, S1_2)
      end },
    { <<"one_for_all means the whole tree got nerfed yo">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
 
          [ {_, C1, _, _ } | _ ] = supervisor:which_children(Pid),
          SubChildren = supervisor:which_children('secondary-sup'),
@@ -91,8 +91,8 @@ tests() ->
          ?assertNotEqual(SubChildren, SubChildren2)
      end },
    { <<"one_for_one in a child sup means the error is contained">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
 
          Children = supervisor:which_children('primary-sup'),
 

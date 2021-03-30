@@ -10,8 +10,8 @@
 tests() ->
   [
    { <<"Write a file using the Erlang API">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
          Filename = temp_filename(),
          Pid ! { write, self(), Filename, <<"hello world">> },
          receive
@@ -22,8 +22,8 @@ tests() ->
          end
      end },
    { <<"Write a file over multiple calls using the Erlang API">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?genserver_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
          Filename = temp_filename(),
          Pid ! { open, Filename },
          Pid ! { write, <<"blobone">> },

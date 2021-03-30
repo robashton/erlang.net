@@ -11,21 +11,21 @@
 tests() ->
   [
    { <<"Run an app from an assembly">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?single_process_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?single_process_app),
          ?assert(is_pid(Pid))
      end },
    { <<"Send a message and receive a message from a C# process">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?single_process_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?single_process_app),
          Pid ! { send_me, self(), hi },
          receive
            Msg -> ?assertEqual(hi, Msg)
          end
      end },
    { <<"Send a message to a C# process that sits in a message loop">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?single_process_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?single_process_app),
          Pid ! { send_me, self(), hi },
          Pid ! { send_me, self(), hi2 },
          receive
@@ -36,8 +36,8 @@ tests() ->
          end
      end },
    { <<"A C# process that terminates when the message loop ends">>,
-     fun(Bridge) ->
-         { ok, Pid } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?single_process_app),
+     fun() ->
+         { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?single_process_app),
          Reference = erlang:monitor(process, Pid),
          Pid ! bye,
          receive
@@ -46,8 +46,8 @@ tests() ->
          end
      end },
    { <<"A C# process that adds two numbers together">>,
-     fun(Bridge) ->
-         { ok, Result } = dotnet:run_app_from_assembly(Bridge, ?test_assembly, ?adding_app, #{ x => 1, y => 2 }),
+     fun() ->
+         { ok, Result } = dotnet:run_app_from_assembly(?test_assembly, ?adding_app, #{ x => 1, y => 2 }),
          ?assertEqual(3, Result)
      end }
   ].
