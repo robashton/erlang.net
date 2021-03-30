@@ -18,7 +18,7 @@ load_hostfxr() ->
                     { ok, Other } ->
                       Other
                   end,
-  load_hostfxr_impl(RuntimeConfig),
+  load_hostfxr_impl(RuntimeConfig).
 
 
 create_bridge(HostFxr) ->
