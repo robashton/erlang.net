@@ -11,7 +11,7 @@ Well - here is an Erlang Gen Server written in VB.NET
         Public Sub New()
         End Sub
         Public Function HandleInfo(ByVal ctx As HandleInfoContext, ByVal msg As Msg) As HandleInfoResult
-          If msg.Item1 = "hello bob" Then
+          If msg.Item1 = "hello robert" Then
             Erlang.Send(msg.Item2, "hello joe")
           Else
             Erlang.Send(msg.Item2, "weeee")
@@ -49,4 +49,21 @@ And here is the usage of that in an Erlang supervision tree - written in Erlang
        ]}}.
 ```
 
-Want to know more? Check out the [Wiki](/wiki/Getting-Started) for a step by step guide on how this works.
+
+And then in Erlang we can quite happily get the pid of this gen server and send/receive messages, resulting in code being executed across the two VMs in both languages.
+
+```erlang
+
+  Pid ! { "hello robert", self() },
+  receive 
+    Msg -> io:format(user, "Got a message! ~p~n", [ Msg ]) %% "hello joe
+  end,
+
+  Pid ! { "anything else", self() },
+  receive 
+    Msg2 -> io:format(user, "Got another message! ~p~n", [ Msg2 ]) %% "weeeeee
+  end
+
+```
+
+Want to know more? Check out the [Wiki](/wiki/Getting-Started) for a step by step guide on how to do more...
