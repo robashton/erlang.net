@@ -1,58 +1,52 @@
 Erlang.NET
 ===
 
-Hosting .NET code in the Erlang VM? Sure can do! 
+Hosting .NET code in the Erlang VM? Sure can do, but what does this look like?!
 
-Getting started
-==
+Well - here is an Erlang Gen Server written in VB.NET
 
-*In dotnet*
-
-Create a dotnet library project using .NET 5.0, and add a reference to the package 'Erlang' (Found on Nuget).
-
+```vb
+    Public Class MyGenServerVB
+        Inherits IHandleInfo(Of Msg)
+        Public Sub New()
+        End Sub
+        Public Function HandleInfo(ByVal ctx As HandleInfoContext, ByVal msg As Msg) As HandleInfoResult
+          If msg.Item1 = "hello bob" Then
+            Erlang.Send(msg.Item2, "hello joe")
+          Else
+            Erlang.Send(msg.Item2, "weeee")
+          End If
+          Return ctx.NoReply()
+        End Function
+    End Class
 ```
-dotnet add package Erlang --version 1.0.0
-```
 
-Define an entry point for your Erlang Application, the simplest one would be a single function returning a single value.
+Here is an application that uses this gen server, written in C#
 
-```
-  using Erlang;
 
-namespace Acme {
-  public class HelloWorld : IApp {
+```csharp
+  public class MyApp : IApp {
     public Object Start() {
-      return "Hello World";
+      return GenServer.StartLink(() => new MyGenServerVB() );
     }
   }
-}
-```
-
-*In Erlang*
-
-- Add erlang.net to your rebar.config, master will do just fine
-
-```
-{deps, [
-  {dotnet, {git, "http://github.com/robashton/erlang.net", {branch, "master"}}},
-]}.
-
-```
-- Add 'dotnet' to the list of applications to start in your app.src
-
-```
-  {applications, [
-                  kernel,
-                  stdlib,
-                  dotnet
-                 ]},
-```
-
-And now, from Erlang, we can invoke that application by writing the following line of code
-
-```
-  { ok, Result } = dotnet:run_app_from_assembly("path/to/MyAssembly.dll", "Acme.HelloWorld");
-  io:format(user, "Result: ~p~n", [ Result ]);
 ```
 
 
+And here is the usage of that in an Erlang supervision tree - written in Erlang
+
+
+```erlang
+  init([]) ->
+    {ok, { #{ strategy => one_for_one }, 
+           #{ start => { dotnet_shim
+                       , start_link
+                       , [ "priv/MyApp.dll", "Acme.MyApp" ]
+                       }
+            , id => my_app
+            , type => worker
+            }
+       ]}}.
+```
+
+Want to know more? Check out the [Wiki](/wiki/Getting-Started) for a step by step guide on how this works.
