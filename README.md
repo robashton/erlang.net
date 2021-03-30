@@ -6,19 +6,19 @@ Hosting .NET code in the Erlang VM? Sure can do, but what does this look like?!
 Well - here is an Erlang Gen Server written in VB.NET
 
 ```vb
-    Public Class MyGenServerVB
-        Inherits IHandleInfo(Of Msg)
-        Public Sub New()
-        End Sub
-        Public Function HandleInfo(ByVal ctx As HandleInfoContext, ByVal msg As Msg) As HandleInfoResult
-          If msg.Item1 = "hello robert" Then
-            Erlang.Send(msg.Item2, "hello joe")
-          Else
-            Erlang.Send(msg.Item2, "weeee")
-          End If
-          Return ctx.NoReply()
-        End Function
-    End Class
+Public Class MyGenServerVB
+    Inherits IHandleInfo(Of Msg)
+    Public Sub New()
+    End Sub
+    Public Function HandleInfo(ByVal ctx As HandleInfoContext, ByVal msg As Msg) As HandleInfoResult
+      If msg.Item1 = "hello robert" Then
+        Erlang.Send(msg.Item2, "hello joe")
+      Else
+        Erlang.Send(msg.Item2, "weeee")
+      End If
+      Return ctx.NoReply()
+    End Function
+End Class
 ```
 
 Here is an application that uses this gen server, written in C#
