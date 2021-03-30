@@ -1,7 +1,7 @@
 Erlang.NET
 ===
 
-Hosting .NET code in the Erlang VM? Sure can do, but what does this look like?!
+Hosting .NET code in the Erlang VM? Sure can do, but what does this look like?! [Getting Started](https://github.com/robashton/erlang.net/wiki/Getting-Started) 
 
 Well - here is an Erlang Gen Server written in VB.NET
 
