@@ -51,7 +51,7 @@ namespace TestImpl.Tests
           Erl.Send(msg.Item2, "hello joe");
           break;
         case ( _, _ ): 
-          Erl.Send(msg.Item2, "boobs");
+          Erl.Send(msg.Item2, "woah");
           break;
       }
     }

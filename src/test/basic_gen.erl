@@ -27,7 +27,7 @@ tests() ->
          { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
          Pid ! {"hi", self()},
          receive
-           Msg -> ?assertEqual("boobs", Msg)
+           Msg -> ?assertEqual("woah", Msg)
          end
      end },
    { <<"Send a message to the handle_call of a gen server">>,
@@ -55,7 +55,7 @@ tests() ->
          { ok, Pid } = dotnet:run_app_from_assembly(?test_assembly, ?genserver_app),
          gen_server:cast(Pid, {"hi", self()}),
          receive
-           Msg -> ?assertEqual("boobs", Msg)
+           Msg -> ?assertEqual("woah", Msg)
          end
      end },
    { <<"Stop a gen server and invoke the terminate handler">>,
