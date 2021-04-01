@@ -23,8 +23,14 @@ load_hostfxr() ->
 
 
 create_bridge(HostFxr) ->
-  File = filename:join(code:priv_dir(dotnet), "Erlang.dll"),
-  create_bridge(HostFxr, File).
+  Target = case application:get_env('runtime_dll') of
+                    undefined ->
+                      Priv = code:priv_dir(dotnet),
+                      filename:join(Priv, "Erlang.dll");
+                    { ok, Other } ->
+                      Other
+                  end,
+  create_bridge(HostFxr, Target).
 
 
 init() ->
