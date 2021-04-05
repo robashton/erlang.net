@@ -1,3 +1,5 @@
+*Note: This was an overly elaborate April Fools project, and whilst fully functional is not intended for serious use, see also* [The real readme](https://github.com/robashton/erlang.net/blob/master/r-r.md)
+
 Erlang.NET
 ===
 
